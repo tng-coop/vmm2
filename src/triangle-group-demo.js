@@ -62,17 +62,19 @@ function displayD3(elem) {
 /**
  * Mapping from each D₃ element to the numbers assigned to the triangle’s vertices.
  * 
- * Our fixed (default) vertex positions in the SVG are:
+ * Our fixed vertex positions in the SVG are:
  *  - top: (0, –60)  (default number "1")
  *  - right: (50, 30)  (default number "2")
  *  - left: (–50, 30)  (default number "3")
  * 
- * For example, the identity "1" is represented as:
+ * For example, the identity "1" is:
  *   { top: "1", right: "2", left: "3" }
  * 
- * And the rotation "r" (which is a 120° counterclockwise rotation) updates
- * the assignment to:
+ * And the rotation "r" (rotate 120° counterclockwise) updates the assignment to:
  *   { top: "3", right: "1", left: "2" }
+ * 
+ * The reflection "f" (reflection about the vertical axis) yields:
+ *   { top: "1", right: "3", left: "2" }
  */
 const vertexMapping = {
   "1":   { top: "1", right: "2", left: "3" },
@@ -168,7 +170,7 @@ class TriangleGroupDemo extends LitElement {
     this.currentElement = "1";
     this.updateFormulaDisplay("1", "1", "1");
     this.updateVertices();
-    // Also clear any transform on the triangle group.
+    // Clear any transform on the triangle group.
     const group = this.renderRoot.querySelector("#triangle-group");
     if (group) {
       group.setAttribute("transform", "");
@@ -205,13 +207,9 @@ class TriangleGroupDemo extends LitElement {
   }
 
   /**
-   * For the r (rotate 120°) transformation, animate the entire triangle (group).
-   *
-   * The triangle group (which includes the polygon and its vertex labels)
-   * is animated from a rotation of 0° to 120° about (0,0) (the center of the viewBox).
-   *
-   * When the animation is complete the group’s transform is cleared and the
-   * vertex labels are updated (per vertexMapping) to reflect the new element.
+   * Animate a 120° rotation for the "r" transformation.
+   * The entire triangle group rotates from 0° to 120° about (0,0).
+   * After the animation, the transform is cleared and the vertex labels update.
    */
   handleRotate120Click() {
     const trans = 'r';
@@ -225,34 +223,53 @@ class TriangleGroupDemo extends LitElement {
     const animateStep = (now) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const angle = 120 * progress; // target: 120° rotation
+      const angle = 120 * progress;
       group.setAttribute("transform", `rotate(${angle})`);
       if (progress < 1) {
         requestAnimationFrame(animateStep);
       } else {
-        // Animation complete.
-        // Clear transform so that the triangle snaps back to default orientation.
         group.setAttribute("transform", "");
-        // Update current element and vertex labels.
         this.currentElement = newElem;
         this.updateVertices();
       }
     };
+    requestAnimationFrame(animateStep);
+  }
 
+  /**
+   * Animate a reflection for the "f" transformation.
+   * We reflect the triangle by animating a scale from 1 to –1 along x.
+   * (Since the triangle is centered at (0,0), this reflects it about the vertical axis.)
+   * After the animation, the transform is cleared and the vertex labels update.
+   */
+  handleReflectClick() {
+    const trans = 'f';
+    const newElem = composeD3(trans, this.currentElement);
+    this.updateFormulaDisplay(trans, this.currentElement, newElem);
+    
+    const group = this.renderRoot.querySelector("#triangle-group");
+    const duration = 500;
+    const startTime = performance.now();
+
+    const animateStep = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Linear interpolation from 1 to -1.
+      const currentScale = 1 - 2 * progress;
+      group.setAttribute("transform", `scale(${currentScale}, 1)`);
+      if (progress < 1) {
+        requestAnimationFrame(animateStep);
+      } else {
+        group.setAttribute("transform", "");
+        this.currentElement = newElem;
+        this.updateVertices();
+      }
+    };
     requestAnimationFrame(animateStep);
   }
 
   handleRotate240Click() {
     const trans = 'r2';
-    const newElem = composeD3(trans, this.currentElement);
-    this.updateFormulaDisplay(trans, this.currentElement, newElem);
-    // For simplicity, update instantly.
-    this.currentElement = newElem;
-    this.updateVertices();
-  }
-
-  handleReflectClick() {
-    const trans = 'f';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
     this.currentElement = newElem;
@@ -317,7 +334,7 @@ class TriangleGroupDemo extends LitElement {
       <!-- Formula display -->
       <div id="formula-display" data-test-id="formula-display"></div>
       
-      <!-- SVG Triangle (the entire group rotates for "r") -->
+      <!-- SVG Triangle (the entire group rotates or reflects) -->
       <svg id="triangle-svg" width="300" height="300" viewBox="-150 -150 300 300" aria-label="Triangle group demonstration">
         <g id="triangle-group">
           <polygon points="0,-100 86.6,50 -86.6,50" fill="#007BFF" stroke="#0056b3" stroke-width="3"></polygon>
