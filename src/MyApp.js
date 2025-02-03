@@ -1,8 +1,9 @@
 // my-app.js
 import { LitElement, html, css } from 'lit';
 import '@shoelace-style/shoelace/dist/components/button/button.js';
-// Import the separated group theory component
+// Import the separated components
 import './z-group-demo.js';
+import './even-group-demo.js';
 
 export class MyApp extends LitElement {
   static styles = css`
@@ -51,6 +52,9 @@ export class MyApp extends LitElement {
         <sl-button variant="primary" @click=${() => this.handleMenuClick('group')}>
           Group Theory Exhibit
         </sl-button>
+        <sl-button variant="info" @click=${() => this.handleMenuClick('even')}>
+          Even Numbers Group Exhibit
+        </sl-button>
         <sl-button variant="success" @click=${() => this.handleMenuClick('other')}>
           Other Exhibit
         </sl-button>
@@ -61,6 +65,8 @@ export class MyApp extends LitElement {
       <main class="content">
         ${this.activeView === 'group'
           ? html`<z-group-demo></z-group-demo>`
+          : this.activeView === 'even'
+          ? html`<even-group-demo></even-group-demo>`
           : this.activeView === 'other'
           ? html`<p>Other Exhibit coming soon!</p>`
           : this.activeView === 'third'
