@@ -23,10 +23,7 @@ export class MyApp extends LitElement {
       margin-bottom: 2rem;
     }
     main.content {
-      border: 1px solid #ccc;
-      padding: 1rem;
-      border-radius: 8px;
-      background-color: #fff;
+      border: none;
     }
   `;
 
