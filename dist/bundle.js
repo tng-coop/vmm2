@@ -6528,4 +6528,6 @@ class MyApp extends r$3 {
 }
 
 customElements.define('my-app', MyApp);
+
+export { MyApp };
 //# sourceMappingURL=bundle.js.map
