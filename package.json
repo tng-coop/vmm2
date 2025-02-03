@@ -1,0 +1,27 @@
+{
+  "name": "rollup-shoelace-lit",
+  "version": "1.0.0",
+  "description": "A sample project using Rollup, Shoelace, and Lit with 2025 best practices",
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "serve": "live-server --open=./index.html",
+    "start": "concurrently \"rollup -c -w\" \"live-server --open=./index.html\""
+  },
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@shoelace-style/shoelace": "^2.19.1",
+    "lit": "^3.2.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "concurrently": "^9.1.2",
+    "live-server": "^1.2.2",
+    "rollup": "^2.79.2",
+    "rollup-plugin-terser": "^7.0.2"
+  }
+}
