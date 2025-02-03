@@ -61,20 +61,23 @@ function displayD3(elem) {
 
 /**
  * Mapping from each D₃ element to the numbers assigned to the triangle’s vertices.
- * 
+ *
  * Our fixed vertex positions in the SVG are:
  *  - top: (0, –60)  (default number "1")
  *  - right: (50, 30)  (default number "2")
  *  - left: (–50, 30)  (default number "3")
- * 
+ *
  * For example, the identity "1" is:
  *   { top: "1", right: "2", left: "3" }
- * 
+ *
  * And the rotation "r" (rotate 120° counterclockwise) updates the assignment to:
  *   { top: "3", right: "1", left: "2" }
- * 
- * The reflection "f" (reflection about the vertical axis) yields:
+ *
+ * The reflection "f" (about the vertical axis) yields:
  *   { top: "1", right: "3", left: "2" }
+ *
+ * Similarly, "rf" becomes { top: "2", right: "1", left: "3" } and
+ * "r2f" becomes { top: "3", right: "2", left: "1" }.
  */
 const vertexMapping = {
   "1":   { top: "1", right: "2", left: "3" },
@@ -170,7 +173,6 @@ class TriangleGroupDemo extends LitElement {
     this.currentElement = "1";
     this.updateFormulaDisplay("1", "1", "1");
     this.updateVertices();
-    // Clear any transform on the triangle group.
     const group = this.renderRoot.querySelector("#triangle-group");
     if (group) {
       group.setAttribute("transform", "");
@@ -198,32 +200,39 @@ class TriangleGroupDemo extends LitElement {
 
   // --- Transformation Handlers ---
 
+  /**
+   * Identity:
+   * When pressed, animate a brief “raise” (scale up) effect.
+   * The animation is added (composite:"add") so that it does not break any other transform animations.
+   */
   handleIdentityClick() {
     const trans = '1';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
-    this.currentElement = newElem;
-    this.updateVertices();
+    const group = this.renderRoot.querySelector("#triangle-group");
+    // Animate scale from 1 to 1.2 and back to 1.
+    group.animate(
+      [
+        { transform: "scale(1)" },
+        { transform: "scale(1.2)" },
+        { transform: "scale(1)" }
+      ],
+      { duration: 300, easing: "ease-out", fill: "forwards", composite: "add" }
+    ).finished.then(() => {
+      // Identity leaves the triangle unchanged.
+      this.currentElement = newElem;
+      this.updateVertices();
+    });
   }
 
-  /**
-   * Animate a 120° rotation for the "r" transformation.
-   * The entire triangle group rotates from 0° to 120° about (0,0).
-   * After the animation, the transform is cleared and the vertex labels update.
-   */
-  handleRotate120Click() {
-    const trans = 'r';
-    const newElem = composeD3(trans, this.currentElement);
-    this.updateFormulaDisplay(trans, this.currentElement, newElem);
-    
+  /** Animate a rotation from 0° to targetAngle. */
+  animateRotation(targetAngle, duration, newElem) {
     const group = this.renderRoot.querySelector("#triangle-group");
-    const duration = 500;
     const startTime = performance.now();
-
     const animateStep = (now) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const angle = 120 * progress;
+      const angle = targetAngle * progress;
       group.setAttribute("transform", `rotate(${angle})`);
       if (progress < 1) {
         requestAnimationFrame(animateStep);
@@ -236,26 +245,30 @@ class TriangleGroupDemo extends LitElement {
     requestAnimationFrame(animateStep);
   }
 
-  /**
-   * Animate a reflection for the "f" transformation.
-   * We reflect the triangle by animating a scale from 1 to –1 along x.
-   * (Since the triangle is centered at (0,0), this reflects it about the vertical axis.)
-   * After the animation, the transform is cleared and the vertex labels update.
-   */
-  handleReflectClick() {
-    const trans = 'f';
+  /** Handler for r (rotate 120°) */
+  handleRotate120Click() {
+    const trans = 'r';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
-    
-    const group = this.renderRoot.querySelector("#triangle-group");
-    const duration = 500;
-    const startTime = performance.now();
+    this.animateRotation(120, 500, newElem);
+  }
 
+  /** Handler for r2 (rotate 240°) */
+  handleRotate240Click() {
+    const trans = 'r2';
+    const newElem = composeD3(trans, this.currentElement);
+    this.updateFormulaDisplay(trans, this.currentElement, newElem);
+    this.animateRotation(240, 1000, newElem);
+  }
+
+  /** Animate a reflection by scaling x from 1 to -1. */
+  animateReflection(duration, newElem) {
+    const group = this.renderRoot.querySelector("#triangle-group");
+    const startTime = performance.now();
     const animateStep = (now) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Linear interpolation from 1 to -1.
-      const currentScale = 1 - 2 * progress;
+      const currentScale = 1 - 2 * progress; // from 1 to -1
       group.setAttribute("transform", `scale(${currentScale}, 1)`);
       if (progress < 1) {
         requestAnimationFrame(animateStep);
@@ -268,28 +281,66 @@ class TriangleGroupDemo extends LitElement {
     requestAnimationFrame(animateStep);
   }
 
-  handleRotate240Click() {
-    const trans = 'r2';
+  /** Handler for f (reflect) */
+  handleReflectClick() {
+    const trans = 'f';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
-    this.currentElement = newElem;
-    this.updateVertices();
+    this.animateReflection(500, newElem);
   }
 
+  /**
+   * Animate a flip-then-rotation.
+   * First, animate a flip (scale x from 1 to –1) over flipDuration.
+   * Then, animate a rotation (while keeping scale –1) over rotationDuration.
+   * The transform during the rotation phase is: rotate(angle) scale(-1,1)
+   */
+  animateFlipThenRotation(targetAngle, flipDuration, rotationDuration, newElem) {
+    const group = this.renderRoot.querySelector("#triangle-group");
+    const flipStartTime = performance.now();
+    const animateFlip = (now) => {
+      const elapsed = now - flipStartTime;
+      const progress = Math.min(elapsed / flipDuration, 1);
+      const currentScale = 1 - 2 * progress; // from 1 to -1
+      group.setAttribute("transform", `scale(${currentScale}, 1)`);
+      if (progress < 1) {
+        requestAnimationFrame(animateFlip);
+      } else {
+        // Start rotation phase (keeping scale at -1).
+        const rotationStartTime = performance.now();
+        const animateRotationPhase = (now2) => {
+          const elapsed2 = now2 - rotationStartTime;
+          const progress2 = Math.min(elapsed2 / rotationDuration, 1);
+          const angle = targetAngle * progress2;
+          group.setAttribute("transform", `rotate(${angle}) scale(-1,1)`);
+          if (progress2 < 1) {
+            requestAnimationFrame(animateRotationPhase);
+          } else {
+            group.setAttribute("transform", "");
+            this.currentElement = newElem;
+            this.updateVertices();
+          }
+        };
+        requestAnimationFrame(animateRotationPhase);
+      }
+    };
+    requestAnimationFrame(animateFlip);
+  }
+
+  /** Handler for r·f (rf): flip then rotate 120° */
   handleRFClick() {
     const trans = 'rf';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
-    this.currentElement = newElem;
-    this.updateVertices();
+    this.animateFlipThenRotation(120, 500, 500, newElem);
   }
 
+  /** Handler for r²·f (r2f): flip then rotate 240° */
   handleR2FClick() {
     const trans = 'r2f';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
-    this.currentElement = newElem;
-    this.updateVertices();
+    this.animateFlipThenRotation(240, 500, 1000, newElem);
   }
 
   // --- Interactive Sections for Group Properties ---
