@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, render } from 'lit';
 
 // --- Helper functions for D₃ ---
 const elementToObj = {
@@ -38,24 +38,26 @@ function inverseD3(a) {
 }
 
 /**
- * Convert a D₃ element to a plain-text representation.
+ * Convert a D₃ element to a TemplateResult.
+ * For example, "r2" returns a template that renders as "r<sup>2</sup>"
+ * and "rf" returns "r&middot;f".
  */
 function displayD3(elem) {
   switch (elem) {
     case "1":
-      return "1";
+      return html`1`;
     case "r":
-      return "r";
+      return html`r`;
     case "r2":
-      return "r²";
+      return html`r<sup>2</sup>`;
     case "f":
-      return "f";
+      return html`f`;
     case "rf":
-      return "r·f";
+      return html`r&middot;f`;
     case "r2f":
-      return "r²·f";
+      return html`r<sup>2</sup>&middot;f`;
     default:
-      return elem;
+      return html`${elem}`;
   }
 }
 
@@ -75,7 +77,9 @@ const vertexMapping = {
 class TriangleGroupDemo extends LitElement {
   static properties = {
     currentElement: { type: String },
-    animating: { type: Boolean }
+    animating: { type: Boolean },
+    // Holds a TemplateResult to display the formula
+    formula: { type: Object }
   };
 
   static styles = css`
@@ -192,9 +196,11 @@ class TriangleGroupDemo extends LitElement {
 
   constructor() {
     super();
-    // Start with the identity element and no ongoing animation.
+    // Start with the identity element, no animation,
+    // and the formula display showing "1 · 1 = 1".
     this.currentElement = "1";
     this.animating = false;
+    this.formula = html`Result: <span class="left-highlight">${displayD3("1")}</span> &middot; <span class="right-highlight">${displayD3("1")}</span> = <span class="product-highlight">${displayD3("1")}</span>`;
   }
 
   firstUpdated() {
@@ -211,15 +217,12 @@ class TriangleGroupDemo extends LitElement {
     });
   }
 
-  /** Reset the demo to the identity element and clear highlights.
-   * When initially loaded, the highlight is set to 1 · 1 = 1.
-   */
+  /** Reset the demo to the identity element and set initial highlights. */
   resetDemo() {
     this.currentElement = "1";
-    this.updateFormulaDisplay("1", "1", "1");
+    this.formula = html`Result: <span class="left-highlight">${displayD3("1")}</span> &middot; <span class="right-highlight">${displayD3("1")}</span> = <span class="product-highlight">${displayD3("1")}</span>`;
     this.updateVertices();
     this.clearTableHighlights();
-    // Set the multiplication table highlight to show 1 · 1 = 1
     this.highlightMultiplicationCell("1", "1");
     const group = this.renderRoot.querySelector("#triangle-group");
     if (group) {
@@ -228,18 +231,14 @@ class TriangleGroupDemo extends LitElement {
   }
 
   /**
-   * Update the formula display with three highlighted variables.
-   * The left factor, right factor, and product are wrapped in spans with
-   * classes that match the table highlighting colors.
+   * Update the formula display by updating the reactive property `formula`.
    */
   updateFormulaDisplay(factorLeft, factorRight, product) {
-    const formulaDisplay = this.renderRoot.querySelector("#formula-display");
-    if (formulaDisplay) {
-      formulaDisplay.innerHTML =
-        `Result: <span class="left-highlight">${displayD3(factorLeft)}</span> · ` +
-        `<span class="right-highlight">${displayD3(factorRight)}</span> = ` +
-        `<span class="product-highlight">${displayD3(product)}</span>`;
-    }
+    this.formula = html`
+      Result: <span class="left-highlight">${displayD3(factorLeft)}</span> &middot; 
+      <span class="right-highlight">${displayD3(factorRight)}</span> = 
+      <span class="product-highlight">${displayD3(product)}</span>
+    `;
   }
 
   /** Update the triangle’s vertex labels according to the current element */
@@ -259,14 +258,12 @@ class TriangleGroupDemo extends LitElement {
    *   to the right factor.
    * - For the main cell (with matching left and right factors), removes any
    *   row/column highlights and adds "table-product-highlight".
-   *
-   * The colors of these classes match those used in the formula display.
    */
   highlightMultiplicationCell(left, right) {
-    // Clear previous table highlights
+    // Clear previous table highlights.
     this.clearTableHighlights();
     
-    // Highlight the entire row (left factor)
+    // Highlight the entire row (left factor).
     const rowCells = this.renderRoot.querySelectorAll(
       `#multiplication-table [data-left="${left}"]`
     );
@@ -274,7 +271,7 @@ class TriangleGroupDemo extends LitElement {
       cell.classList.add('table-left-highlight');
     });
     
-    // Highlight the entire column (right factor)
+    // Highlight the entire column (right factor).
     const colCells = this.renderRoot.querySelectorAll(
       `#multiplication-table [data-right="${right}"]`
     );
@@ -282,7 +279,7 @@ class TriangleGroupDemo extends LitElement {
       cell.classList.add('table-right-highlight');
     });
     
-    // For the main cell, remove row/column highlights and add product highlight
+    // For the main cell, remove row/column highlights and add product highlight.
     const mainCell = this.renderRoot.querySelector(
       `#multiplication-table td[data-left="${left}"][data-right="${right}"]`
     );
@@ -293,7 +290,7 @@ class TriangleGroupDemo extends LitElement {
   }
 
   // --- Transformation Handlers ---
-  // (Each now calls highlightMultiplicationCell and updates the formula display.)
+  // (Each transformation updates the highlights and formula.)
   
   handleIdentityClick() {
     if (this.animating) return;
@@ -448,21 +445,27 @@ class TriangleGroupDemo extends LitElement {
     this.animateFlipThenRotation(240, 500, 1000, newElem);
   }
 
-  // --- Interactive Sections for Group Properties (unchanged) ---
-  
+  // --- Interactive Sections for Group Properties ---
+  // Instead of using string interpolation (which calls toString on a TemplateResult),
+  // we use Lit’s render() to update the container with a TemplateResult.
+
   handleInteractiveClosure() {
     const a = this.renderRoot.querySelector('#closure-a').value;
     const b = this.renderRoot.querySelector('#closure-b').value;
     const product = composeD3(a, b);
-    this.renderRoot.querySelector('#closure-result').innerHTML =
-      `Result: ${displayD3(a)} · ${displayD3(b)} = ${displayD3(product)}. Closure holds because the result is in D₃.`;
+    const closureTemplate = html`
+      Result: ${displayD3(a)} &middot; ${displayD3(b)} = ${displayD3(product)}. Closure holds because the result is in D₃.
+    `;
+    render(closureTemplate, this.renderRoot.querySelector('#closure-result'));
   }
 
   handleInteractiveIdentityProp() {
     const a = this.renderRoot.querySelector('#identity-element').value;
     const product = composeD3("1", a);
-    this.renderRoot.querySelector('#identity-result-prop').innerHTML =
-      `Result: ${displayD3("1")} · ${displayD3(a)} = ${displayD3(product)}. The identity element is 1.`;
+    const identityTemplate = html`
+      Result: ${displayD3("1")} &middot; ${displayD3(a)} = ${displayD3(product)}. The identity element is 1.
+    `;
+    render(identityTemplate, this.renderRoot.querySelector('#identity-result-prop'));
   }
 
   handleInteractiveAssociativityProp() {
@@ -471,17 +474,21 @@ class TriangleGroupDemo extends LitElement {
     const c = this.renderRoot.querySelector('#assoc-c').value;
     const left = composeD3(composeD3(a, b), c);
     const right = composeD3(a, composeD3(b, c));
-    let msg = `Result: ( ${displayD3(a)} · ${displayD3(b)} ) · ${displayD3(c)} = ${displayD3(left)} and `;
-    msg += `${displayD3(a)} · ( ${displayD3(b)} · ${displayD3(c)} ) = ${displayD3(right)}. `;
-    msg += (left === right) ? "Associativity holds." : "Associativity fails!";
-    this.renderRoot.querySelector('#associativity-result-prop').innerHTML = msg;
+    const assocTemplate = html`
+      Result: ( ${displayD3(a)} &middot; ${displayD3(b)} ) &middot; ${displayD3(c)} = ${displayD3(left)}
+      and ${displayD3(a)} &middot; ( ${displayD3(b)} &middot; ${displayD3(c)} ) = ${displayD3(right)}.
+      ${left === right ? 'Associativity holds.' : 'Associativity fails!'}
+    `;
+    render(assocTemplate, this.renderRoot.querySelector('#associativity-result-prop'));
   }
 
   handleInteractiveInverseProp() {
     const a = this.renderRoot.querySelector('#inverse-element').value;
     const inv = inverseD3(a);
-    this.renderRoot.querySelector('#inverse-result-prop').innerHTML =
-      `Result: ${displayD3(a)} · ${displayD3(inv)} = 1. Inverse holds.`;
+    const inverseTemplate = html`
+      Result: ${displayD3(a)} &middot; ${displayD3(inv)} = 1. Inverse holds.
+    `;
+    render(inverseTemplate, this.renderRoot.querySelector('#inverse-result-prop'));
   }
 
   render() {
@@ -490,8 +497,8 @@ class TriangleGroupDemo extends LitElement {
     return html`
       <h1>Triangle Group Demonstration (Dihedral Group D₃)</h1>
       
-      <!-- Formula display with highlighted variables -->
-      <div id="formula-display" data-test-id="formula-display"></div>
+      <!-- Formula display using the reactive property -->
+      <div id="formula-display" data-test-id="formula-display">${this.formula}</div>
       
       <!-- Container for the SVG triangle and multiplication table -->
       <div class="demo-container">
@@ -520,7 +527,7 @@ class TriangleGroupDemo extends LitElement {
                   <th data-left="${left}">${displayD3(left)}</th>
                   ${elements.map(right => html`
                     <td data-left="${left}" data-right="${right}">
-                      ${composeD3(left, right)}
+                      ${displayD3(composeD3(left, right))}
                     </td>
                   `)}
                 </tr>
@@ -551,7 +558,7 @@ class TriangleGroupDemo extends LitElement {
           data-test-id="rotate-240-button"
           ?disabled="${this.animating}"
           @click="${this.handleRotate240Click}">
-          r² (Rotate 240°)
+          r<sup>2</sup> (Rotate 240°)
         </button>
         <button id="reflect-button" 
           aria-label="Reflect triangle"
@@ -565,14 +572,14 @@ class TriangleGroupDemo extends LitElement {
           data-test-id="rf-button"
           ?disabled="${this.animating}"
           @click="${this.handleRFClick}">
-          r·f
+          r&middot;f
         </button>
         <button id="r2f-button" 
           aria-label="Reflect then rotate 240 degrees"
           data-test-id="r2f-button"
           ?disabled="${this.animating}"
           @click="${this.handleR2FClick}">
-          r²·f
+          r<sup>2</sup>&middot;f
         </button>
         <button id="reset-button" 
           aria-label="Reset demonstration"
@@ -583,7 +590,7 @@ class TriangleGroupDemo extends LitElement {
         </button>
       </div>
       
-      <!-- Interactive Sections for Group Properties (unchanged) -->
+      <!-- Interactive Sections for Group Properties -->
       <div class="interactive">
         <section id="closure-section" aria-labelledby="closure-heading" data-test-id="closure-section">
           <h2 id="closure-heading">Closure</h2>
