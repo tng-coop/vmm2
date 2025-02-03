@@ -1,7 +1,6 @@
 import { LitElement, html, css } from 'lit';
 
 // --- Helper functions for D₃ ---
-// Data representation for D₃ elements.
 const elementToObj = {
   "1":   { k: 0, d: 0 },
   "r":   { k: 1, d: 0 },
@@ -61,12 +60,19 @@ function displayD3(elem) {
 }
 
 /**
- * Mapping from each D₃ element to the labels at the three fixed vertices.
- *
- * We define the three positions as:
- *  - top: the top vertex (default label "1")
- *  - right: the bottom‐right vertex (default label "2")
- *  - left: the bottom‐left vertex (default label "3")
+ * Mapping from each D₃ element to the numbers assigned to the triangle’s vertices.
+ * 
+ * Our fixed (default) vertex positions in the SVG are:
+ *  - top: (0, –60)  (default number "1")
+ *  - right: (50, 30)  (default number "2")
+ *  - left: (–50, 30)  (default number "3")
+ * 
+ * For example, the identity "1" is represented as:
+ *   { top: "1", right: "2", left: "3" }
+ * 
+ * And the rotation "r" (which is a 120° counterclockwise rotation) updates
+ * the assignment to:
+ *   { top: "3", right: "1", left: "2" }
  */
 const vertexMapping = {
   "1":   { top: "1", right: "2", left: "3" },
@@ -77,7 +83,7 @@ const vertexMapping = {
   "r2f": { top: "3", right: "2", left: "1" }
 };
 
-// --- TriangleGroupDemo Component (No SVG rotation, vertex labels update) ---
+// --- TriangleGroupDemo Component ---
 class TriangleGroupDemo extends LitElement {
   static properties = {
     currentElement: { type: String }
@@ -98,6 +104,7 @@ class TriangleGroupDemo extends LitElement {
     svg {
       display: block;
       margin: 0 auto 20px;
+      overflow: visible;
     }
     .buttons, .interactive {
       text-align: center;
@@ -156,14 +163,19 @@ class TriangleGroupDemo extends LitElement {
     this.resetDemo();
   }
 
-  /** Reset the demo to the identity element and update vertex labels. */
+  /** Reset the demo to the identity element. */
   resetDemo() {
     this.currentElement = "1";
     this.updateFormulaDisplay("1", "1", "1");
     this.updateVertices();
+    // Also clear any transform on the triangle group.
+    const group = this.renderRoot.querySelector("#triangle-group");
+    if (group) {
+      group.setAttribute("transform", "");
+    }
   }
 
-  /** Update the formula display (using MathML) with the current multiplication step. */
+  /** Update the MathML formula display with the current multiplication step. */
   updateFormulaDisplay(factorLeft, factorRight, product) {
     const formulaDisplay = this.renderRoot.querySelector("#formula-display");
     if (formulaDisplay) {
@@ -173,7 +185,7 @@ class TriangleGroupDemo extends LitElement {
   }
 
   /**
-   * Update the text labels at the three fixed vertices according to the current D₃ element.
+   * Update the text labels at the triangle’s vertices according to the current D₃ element.
    */
   updateVertices() {
     const mapping = vertexMapping[this.currentElement];
@@ -182,7 +194,7 @@ class TriangleGroupDemo extends LitElement {
     this.renderRoot.querySelector('#vertex-left').textContent = mapping.left;
   }
 
-  // --- Transformation Handlers (Instant, No SVG rotation) ---
+  // --- Transformation Handlers ---
 
   handleIdentityClick() {
     const trans = '1';
@@ -192,18 +204,49 @@ class TriangleGroupDemo extends LitElement {
     this.updateVertices();
   }
 
+  /**
+   * For the r (rotate 120°) transformation, animate the entire triangle (group).
+   *
+   * The triangle group (which includes the polygon and its vertex labels)
+   * is animated from a rotation of 0° to 120° about (0,0) (the center of the viewBox).
+   *
+   * When the animation is complete the group’s transform is cleared and the
+   * vertex labels are updated (per vertexMapping) to reflect the new element.
+   */
   handleRotate120Click() {
     const trans = 'r';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
-    this.currentElement = newElem;
-    this.updateVertices();
+    
+    const group = this.renderRoot.querySelector("#triangle-group");
+    const duration = 500;
+    const startTime = performance.now();
+
+    const animateStep = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const angle = 120 * progress; // target: 120° rotation
+      group.setAttribute("transform", `rotate(${angle})`);
+      if (progress < 1) {
+        requestAnimationFrame(animateStep);
+      } else {
+        // Animation complete.
+        // Clear transform so that the triangle snaps back to default orientation.
+        group.setAttribute("transform", "");
+        // Update current element and vertex labels.
+        this.currentElement = newElem;
+        this.updateVertices();
+      }
+    };
+
+    requestAnimationFrame(animateStep);
   }
 
   handleRotate240Click() {
     const trans = 'r2';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
+    // For simplicity, update instantly.
     this.currentElement = newElem;
     this.updateVertices();
   }
@@ -232,7 +275,7 @@ class TriangleGroupDemo extends LitElement {
     this.updateVertices();
   }
 
-  // --- Declarative Event Handlers for Interactive Sections ---
+  // --- Interactive Sections for Group Properties ---
 
   handleInteractiveClosure() {
     const a = this.renderRoot.querySelector('#closure-a').value;
@@ -274,10 +317,11 @@ class TriangleGroupDemo extends LitElement {
       <!-- Formula display -->
       <div id="formula-display" data-test-id="formula-display"></div>
       
-      <!-- SVG Triangle with Fixed Vertices (Labels update via numbers) -->
+      <!-- SVG Triangle (the entire group rotates for "r") -->
       <svg id="triangle-svg" width="300" height="300" viewBox="-150 -150 300 300" aria-label="Triangle group demonstration">
         <g id="triangle-group">
           <polygon points="0,-100 86.6,50 -86.6,50" fill="#007BFF" stroke="#0056b3" stroke-width="3"></polygon>
+          <!-- The text labels are initially positioned at fixed coordinates. -->
           <text id="vertex-top" class="vertex-label" x="0" y="-60" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">1</text>
           <text id="vertex-right" class="vertex-label" x="50" y="30" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">2</text>
           <text id="vertex-left" class="vertex-label" x="-50" y="30" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">3</text>
@@ -329,7 +373,7 @@ class TriangleGroupDemo extends LitElement {
         </button>
       </div>
       
-      <!-- Interactive sections for group properties -->
+      <!-- Interactive Sections for Group Properties -->
       <div class="interactive">
         <section id="closure-section" aria-labelledby="closure-heading" data-test-id="closure-section">
           <h2 id="closure-heading">Closure</h2>
