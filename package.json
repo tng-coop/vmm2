@@ -23,6 +23,7 @@
     "concurrently": "^9.1.2",
     "live-server": "^1.2.2",
     "npm-check-updates": "^17.1.14",
-    "rollup": "^4.34.1"
+    "rollup": "^4.34.1",
+    "rollup-plugin-postcss": "^4.0.2"
   }
 }

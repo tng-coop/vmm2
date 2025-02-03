@@ -1,4 +1,6 @@
+// rollup.config.js
 import resolve from '@rollup/plugin-node-resolve';
+import postcss from 'rollup-plugin-postcss';
 
 export default {
   input: 'src/main.js',
@@ -9,5 +11,10 @@ export default {
   },
   plugins: [
     resolve(),
+    postcss({
+      extract: true, // This should output a bundle.css file
+      minimize: true,
+      sourceMap: true
+    })
   ]
 };
