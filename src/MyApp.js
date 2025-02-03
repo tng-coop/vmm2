@@ -10,51 +10,67 @@ export class MyApp extends LitElement {
       display: block;
       padding: 2rem;
       font-family: system-ui, sans-serif;
-      text-align: center;
+      background-color: #fafafa;
     }
-    .button-container {
-      margin-top: 2rem;
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    nav.menu {
       display: flex;
       justify-content: center;
       gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    main.content {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 8px;
+      background-color: #fff;
     }
   `;
 
   static properties = {
-    showOldApp: { type: Boolean },
+    activeView: { type: String },
   };
 
   constructor() {
     super();
-    this.showOldApp = false;
+    // No exhibit is selected by default.
+    this.activeView = '';
   }
 
-  handleButtonClick(buttonNumber) {
-    if (buttonNumber === 1) {
-      // Show the group theory component when Button 1 is clicked.
-      this.showOldApp = true;
-    } else {
-      alert(`Button ${buttonNumber} clicked!`);
-    }
+  handleMenuClick(view) {
+    this.activeView = view;
   }
 
   render() {
-    return this.showOldApp
-      ? html`<z-group-demo></z-group-demo>`
-      : html`
-          <h1>Rollup + Shoelace + Lit</h1>
-          <div class="button-container">
-            <sl-button variant="primary" @click=${() => this.handleButtonClick(1)}>
-              Button 1
-            </sl-button>
-            <sl-button variant="success" @click=${() => this.handleButtonClick(2)}>
-              Button 2
-            </sl-button>
-            <sl-button variant="danger" @click=${() => this.handleButtonClick(3)}>
-              Button 3
-            </sl-button>
-          </div>
-        `;
+    return html`
+      <header>
+        <h1>Museum of Mathematics</h1>
+        <p>Explore our exhibits by selecting one from the menu below.</p>
+      </header>
+      <nav class="menu">
+        <sl-button variant="primary" @click=${() => this.handleMenuClick('group')}>
+          Group Theory Exhibit
+        </sl-button>
+        <sl-button variant="success" @click=${() => this.handleMenuClick('other')}>
+          Other Exhibit
+        </sl-button>
+        <sl-button variant="danger" @click=${() => this.handleMenuClick('third')}>
+          Third Exhibit
+        </sl-button>
+      </nav>
+      <main class="content">
+        ${this.activeView === 'group'
+          ? html`<z-group-demo></z-group-demo>`
+          : this.activeView === 'other'
+          ? html`<p>Other Exhibit coming soon!</p>`
+          : this.activeView === 'third'
+          ? html`<p>Third Exhibit coming soon!</p>`
+          : html`<p>Welcome to the Museum of Mathematics. Please select an exhibit from the menu above.</p>`}
+      </main>
+    `;
   }
 }
 
