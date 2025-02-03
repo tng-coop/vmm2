@@ -1,9 +1,13 @@
 import { LitElement, html, css } from 'lit';
 import '@shoelace-style/shoelace/dist/components/button/button.js';
+import '@shoelace-style/shoelace/dist/components/dropdown/dropdown.js';
+import '@shoelace-style/shoelace/dist/components/menu/menu.js';
+import '@shoelace-style/shoelace/dist/components/menu-item/menu-item.js';
 // Import the separated components
 import './z-group-demo.js';
 import './even-group-demo.js';
-import './triangle-group-demo.js'
+import './triangle-group-demo.js';
+
 export class MyApp extends LitElement {
   static styles = css`
     :host {
@@ -48,20 +52,26 @@ export class MyApp extends LitElement {
         <p>Explore our exhibits by selecting one from the menu below.</p>
       </header>
       <nav class="menu">
-        <sl-button variant="primary" @click=${() => this.handleMenuClick('group')}>
-          Group Theory Exhibit
-        </sl-button>
-        <sl-button variant="primary" @click=${() => this.handleMenuClick('even')}>
-          Even Numbers Group Exhibit
-        </sl-button>
-        <sl-button variant="success" @click=${() => this.handleMenuClick('other')}>
-          Other Exhibit
-        </sl-button>
-        <sl-button variant="danger" @click=${() => this.handleMenuClick('third')}>
-          Third Exhibit
-        </sl-button>
-        <sl-button variant="warning" @click=${() => this.handleMenuClick('calendar')}>
-          Calendar Exhibit
+        <!-- Group demos as a dropdown submenu -->
+        <sl-dropdown>
+          <sl-button slot="trigger" variant="primary">
+            Group Demos
+          </sl-button>
+          <sl-menu>
+            <sl-menu-item @click=${() => this.handleMenuClick('group')}>
+              Group Theory Exhibit
+            </sl-menu-item>
+            <sl-menu-item @click=${() => this.handleMenuClick('even')}>
+              Even Numbers Exhibit
+            </sl-menu-item>
+            <sl-menu-item @click=${() => this.handleMenuClick('other')}>
+              Triangle Groups Exhibit
+            </sl-menu-item>
+          </sl-menu>
+        </sl-dropdown>
+        <!-- New top-level Web Programming item -->
+        <sl-button variant="primary" @click=${() => this.handleMenuClick('webprogramming')}>
+          Web Programming
         </sl-button>
       </nav>
       <main class="content">
@@ -71,10 +81,8 @@ export class MyApp extends LitElement {
           ? html`<even-group-demo></even-group-demo>`
           : this.activeView === 'other'
           ? html`<triangle-group-demo></triangle-group-demo>`
-          : this.activeView === 'third'
-          ? html`<p>Third Exhibit coming soon!</p>`
-          : this.activeView === 'calendar'
-          ? html`<calendar-widget></calendar-widget>`
+          : this.activeView === 'webprogramming'
+          ? html`<p>Web Programming Exhibit coming soon!</p>`
           : html`<p>Welcome to the Museum of Mathematics. Please select an exhibit from the menu above.</p>`}
       </main>
     `;
