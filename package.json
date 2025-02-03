@@ -7,7 +7,8 @@
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "serve": "live-server --open=./index.html",
-    "start": "concurrently \"rollup -c -w\" \"live-server --open=./index.html\""
+    "start": "concurrently \"rollup -c -w\" \"live-server --open=./index.html\"",
+    "update-all": "ncu -u --target=latest && npm install"
   },
   "main": "index.js",
   "keywords": [],
@@ -21,7 +22,8 @@
     "@rollup/plugin-node-resolve": "^16.0.0",
     "concurrently": "^9.1.2",
     "live-server": "^1.2.2",
-    "rollup": "^2.79.2",
+    "npm-check-updates": "^17.1.14",
+    "rollup": "^4.34.1",
     "rollup-plugin-terser": "^7.0.2"
   }
 }
