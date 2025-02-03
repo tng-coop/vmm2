@@ -210,20 +210,24 @@ class TriangleGroupDemo extends LitElement {
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
     const group = this.renderRoot.querySelector("#triangle-group");
-    // Animate scale from 1 to 1.2 and back to 1.
-    group.animate(
+    const anim = group.animate(
       [
         { transform: "scale(1)" },
         { transform: "scale(1.2)" },
         { transform: "scale(1)" }
       ],
-      { duration: 300, easing: "ease-out", fill: "forwards", composite: "add" }
-    ).finished.then(() => {
-      // Identity leaves the triangle unchanged.
+      { duration: 300, easing: "ease-out", fill: "forwards" }
+    );
+    anim.finished.then(() => {
+      // Explicitly cancel the animation to clear the lingering effect.
+      anim.cancel();
+      // Also reset the transform attribute.
+      group.setAttribute("transform", "");
       this.currentElement = newElem;
       this.updateVertices();
     });
   }
+  
 
   /** Animate a rotation from 0° to targetAngle. */
   animateRotation(targetAngle, duration, newElem) {
