@@ -5941,23 +5941,6 @@ function displayD3(elem) {
 
 /**
  * Mapping from each D₃ element to the numbers assigned to the triangle’s vertices.
- *
- * Our fixed vertex positions in the SVG are:
- *  - top: (0, –60)  (default number "1")
- *  - right: (50, 30)  (default number "2")
- *  - left: (–50, 30)  (default number "3")
- *
- * For example, the identity "1" is:
- *   { top: "1", right: "2", left: "3" }
- *
- * And the rotation "r" (rotate 120° counterclockwise) updates the assignment to:
- *   { top: "3", right: "1", left: "2" }
- *
- * The reflection "f" (about the vertical axis) yields:
- *   { top: "1", right: "3", left: "2" }
- *
- * Similarly, "rf" becomes { top: "2", right: "1", left: "3" } and
- * "r2f" becomes { top: "3", right: "2", left: "1" }.
  */
 const vertexMapping = {
   "1":   { top: "1", right: "2", left: "3" },
@@ -5971,7 +5954,8 @@ const vertexMapping = {
 // --- TriangleGroupDemo Component ---
 class TriangleGroupDemo extends r$3 {
   static properties = {
-    currentElement: { type: String }
+    currentElement: { type: String },
+    animating: { type: Boolean }
   };
 
   static styles = i$5`
@@ -6004,6 +5988,10 @@ class TriangleGroupDemo extends r$3 {
       border-radius: 4px;
       background-color: #007bff;
       color: #fff;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
     #formula-display {
       text-align: center;
@@ -6040,8 +6028,9 @@ class TriangleGroupDemo extends r$3 {
 
   constructor() {
     super();
-    // Start with the identity element.
+    // Start with the identity element and no ongoing animation.
     this.currentElement = "1";
+    this.animating = false;
   }
 
   firstUpdated() {
@@ -6059,7 +6048,7 @@ class TriangleGroupDemo extends r$3 {
     }
   }
 
-  /** Update the MathML formula display with the current multiplication step. */
+  /** Update the MathML formula display. */
   updateFormulaDisplay(factorLeft, factorRight, product) {
     const formulaDisplay = this.renderRoot.querySelector("#formula-display");
     if (formulaDisplay) {
@@ -6068,9 +6057,7 @@ class TriangleGroupDemo extends r$3 {
     }
   }
 
-  /**
-   * Update the text labels at the triangle’s vertices according to the current D₃ element.
-   */
+  /** Update the triangle’s vertex labels. */
   updateVertices() {
     const mapping = vertexMapping[this.currentElement];
     this.renderRoot.querySelector('#vertex-top').textContent = mapping.top;
@@ -6081,27 +6068,30 @@ class TriangleGroupDemo extends r$3 {
   // --- Transformation Handlers ---
 
   /**
-   * Identity:
-   * When pressed, animate a brief “raise” (scale up) effect.
-   * The animation is added (composite:"add") so that it does not break any other transform animations.
+   * Identity transformation (scale up then back).
    */
   handleIdentityClick() {
+    if (this.animating) return;
+    this.animating = true;
     const trans = '1';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
     const group = this.renderRoot.querySelector("#triangle-group");
-    // Animate scale from 1 to 1.2 and back to 1.
-    group.animate(
+    const anim = group.animate(
       [
         { transform: "scale(1)" },
         { transform: "scale(1.2)" },
         { transform: "scale(1)" }
       ],
-      { duration: 300, easing: "ease-out", fill: "forwards", composite: "add" }
-    ).finished.then(() => {
-      // Identity leaves the triangle unchanged.
+      { duration: 300, easing: "ease-out", fill: "forwards" }
+    );
+    anim.finished.then(() => {
+      // Cancel the animation to remove any lingering transform.
+      anim.cancel();
+      group.setAttribute("transform", "");
       this.currentElement = newElem;
       this.updateVertices();
+      this.animating = false;
     });
   }
 
@@ -6120,21 +6110,26 @@ class TriangleGroupDemo extends r$3 {
         group.setAttribute("transform", "");
         this.currentElement = newElem;
         this.updateVertices();
+        this.animating = false;
       }
     };
     requestAnimationFrame(animateStep);
   }
 
-  /** Handler for r (rotate 120°) */
+  /** Handler for rotating 120° */
   handleRotate120Click() {
+    if (this.animating) return;
+    this.animating = true;
     const trans = 'r';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
     this.animateRotation(120, 500, newElem);
   }
 
-  /** Handler for r2 (rotate 240°) */
+  /** Handler for rotating 240° */
   handleRotate240Click() {
+    if (this.animating) return;
+    this.animating = true;
     const trans = 'r2';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
@@ -6156,13 +6151,16 @@ class TriangleGroupDemo extends r$3 {
         group.setAttribute("transform", "");
         this.currentElement = newElem;
         this.updateVertices();
+        this.animating = false;
       }
     };
     requestAnimationFrame(animateStep);
   }
 
-  /** Handler for f (reflect) */
+  /** Handler for reflection */
   handleReflectClick() {
+    if (this.animating) return;
+    this.animating = true;
     const trans = 'f';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
@@ -6170,10 +6168,7 @@ class TriangleGroupDemo extends r$3 {
   }
 
   /**
-   * Animate a flip-then-rotation.
-   * First, animate a flip (scale x from 1 to –1) over flipDuration.
-   * Then, animate a rotation (while keeping scale –1) over rotationDuration.
-   * The transform during the rotation phase is: rotate(angle) scale(-1,1)
+   * Animate a flip (scale from 1 to –1) then a rotation (keeping scale at –1).
    */
   animateFlipThenRotation(targetAngle, flipDuration, rotationDuration, newElem) {
     const group = this.renderRoot.querySelector("#triangle-group");
@@ -6181,12 +6176,12 @@ class TriangleGroupDemo extends r$3 {
     const animateFlip = (now) => {
       const elapsed = now - flipStartTime;
       const progress = Math.min(elapsed / flipDuration, 1);
-      const currentScale = 1 - 2 * progress; // from 1 to -1
+      const currentScale = 1 - 2 * progress;
       group.setAttribute("transform", `scale(${currentScale}, 1)`);
       if (progress < 1) {
         requestAnimationFrame(animateFlip);
       } else {
-        // Start rotation phase (keeping scale at -1).
+        // Now animate the rotation while keeping scale at -1.
         const rotationStartTime = performance.now();
         const animateRotationPhase = (now2) => {
           const elapsed2 = now2 - rotationStartTime;
@@ -6199,6 +6194,7 @@ class TriangleGroupDemo extends r$3 {
             group.setAttribute("transform", "");
             this.currentElement = newElem;
             this.updateVertices();
+            this.animating = false;
           }
         };
         requestAnimationFrame(animateRotationPhase);
@@ -6207,16 +6203,20 @@ class TriangleGroupDemo extends r$3 {
     requestAnimationFrame(animateFlip);
   }
 
-  /** Handler for r·f (rf): flip then rotate 120° */
+  /** Handler for flip then rotate 120° */
   handleRFClick() {
+    if (this.animating) return;
+    this.animating = true;
     const trans = 'rf';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
     this.animateFlipThenRotation(120, 500, 500, newElem);
   }
 
-  /** Handler for r²·f (r2f): flip then rotate 240° */
+  /** Handler for flip then rotate 240° */
   handleR2FClick() {
+    if (this.animating) return;
+    this.animating = true;
     const trans = 'r2f';
     const newElem = composeD3(trans, this.currentElement);
     this.updateFormulaDisplay(trans, this.currentElement, newElem);
@@ -6265,11 +6265,10 @@ class TriangleGroupDemo extends r$3 {
       <!-- Formula display -->
       <div id="formula-display" data-test-id="formula-display"></div>
       
-      <!-- SVG Triangle (the entire group rotates or reflects) -->
+      <!-- SVG Triangle -->
       <svg id="triangle-svg" width="300" height="300" viewBox="-150 -150 300 300" aria-label="Triangle group demonstration">
         <g id="triangle-group">
           <polygon points="0,-100 86.6,50 -86.6,50" fill="#007BFF" stroke="#0056b3" stroke-width="3"></polygon>
-          <!-- The text labels are initially positioned at fixed coordinates. -->
           <text id="vertex-top" class="vertex-label" x="0" y="-60" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">1</text>
           <text id="vertex-right" class="vertex-label" x="50" y="30" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">2</text>
           <text id="vertex-left" class="vertex-label" x="-50" y="30" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">3</text>
@@ -6280,42 +6279,49 @@ class TriangleGroupDemo extends r$3 {
         <button id="identity-button" 
           aria-label="Apply identity transformation"
           data-test-id="identity-button"
+          ?disabled="${this.animating}"
           @click="${this.handleIdentityClick}">
           1 (Identity)
         </button>
         <button id="rotate-120-button" 
           aria-label="Rotate triangle 120 degrees"
           data-test-id="rotate-120-button"
+          ?disabled="${this.animating}"
           @click="${this.handleRotate120Click}">
           r (Rotate 120°)
         </button>
         <button id="rotate-240-button" 
           aria-label="Rotate triangle 240 degrees"
           data-test-id="rotate-240-button"
+          ?disabled="${this.animating}"
           @click="${this.handleRotate240Click}">
           r² (Rotate 240°)
         </button>
         <button id="reflect-button" 
           aria-label="Reflect triangle"
           data-test-id="reflect-button"
+          ?disabled="${this.animating}"
           @click="${this.handleReflectClick}">
           f (Reflect)
         </button>
         <button id="rf-button" 
           aria-label="Reflect then rotate 120 degrees"
           data-test-id="rf-button"
+          ?disabled="${this.animating}"
           @click="${this.handleRFClick}">
           r·f
         </button>
         <button id="r2f-button" 
           aria-label="Reflect then rotate 240 degrees"
           data-test-id="r2f-button"
+          ?disabled="${this.animating}"
           @click="${this.handleR2FClick}">
           r²·f
         </button>
         <button id="reset-button" 
           aria-label="Reset demonstration"
           data-test-id="reset-button"
+          ?disabled="${this.animating}"
           @click="${this.resetDemo}">
           Reset
         </button>
@@ -6367,7 +6373,7 @@ class TriangleGroupDemo extends r$3 {
           </select>
           <button id="check-identity-prop" 
             aria-label="Check identity property"
-            data-test-id="check-identity-prop-button"
+            data-test-id="identity-result-prop-button"
             @click="${this.handleInteractiveIdentityProp}">
             Check Identity
           </button>
