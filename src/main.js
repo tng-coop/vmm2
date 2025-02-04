@@ -1,4 +1,7 @@
 import { LitElement, html, css } from 'lit';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-javascript.js'; // load JavaScript syntax highlighting
+import 'prismjs/themes/prism.css';    
 import '@shoelace-style/shoelace/dist/themes/light.css';
 import '@shoelace-style/shoelace/dist/components/button/button.js';
 import '@shoelace-style/shoelace/dist/components/dropdown/dropdown.js';
