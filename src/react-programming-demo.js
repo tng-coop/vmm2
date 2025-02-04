@@ -22,13 +22,21 @@ export class ReactProgrammingDemo extends LitElement {
 
     // Create the inner <prism-code> element
     const prismCodeElement = document.createElement('prism-code');
-
     // Forward the "code" and "language" attributes from the wrapper to the inner element
-    ['code', 'language'].forEach((attr) => {
-      if (this.hasAttribute(attr)) {
-        prismCodeElement.setAttribute(attr, this.getAttribute(attr));
-      }
-    });
+    const code = `
+import React from 'react';
+
+const HelloWorld = () => (
+  <div>
+    <h1>Hello, world!</h1>
+    <p>This is a sample JSX component.</p>
+  </div>
+);
+
+export default HelloWorld;
+    `;
+        prismCodeElement.setAttribute('code', code.trim());
+        prismCodeElement.setAttribute('language', 'javascript');
 
     // Append the inner component to the container, then append the container to this element.
     container.appendChild(prismCodeElement);

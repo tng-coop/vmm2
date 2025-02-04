@@ -148,7 +148,7 @@ class MyApp extends HTMLElement {
         contentElement = document.createElement('triangle-group-demo');
         break;
       case 'webprogramming':
-        contentElement = document.createElement('prism-code');
+        contentElement = document.createElement('react-programming-demo');
         break;
       default:
         contentElement = document.createElement('p');
