@@ -5918,24 +5918,26 @@ function inverseD3(a) {
 }
 
 /**
- * Convert a D₃ element to a MathML representation.
+ * Convert a D₃ element to a TemplateResult.
+ * For example, "r2" returns a template that renders as "r<sup>2</sup>"
+ * and "rf" returns "r&middot;f".
  */
 function displayD3(elem) {
   switch (elem) {
     case "1":
-      return "<mi>1</mi>";
+      return x`1`;
     case "r":
-      return "<mi>r</mi>";
+      return x`r`;
     case "r2":
-      return "<msup><mi>r</mi><mn>2</mn></msup>";
+      return x`r<sup>2</sup>`;
     case "f":
-      return "<mi>f</mi>";
+      return x`f`;
     case "rf":
-      return "<mrow><mi>r</mi><mo>&#x22C5;</mo><mi>f</mi></mrow>";
+      return x`r&middot;f`;
     case "r2f":
-      return "<mrow><msup><mi>r</mi><mn>2</mn></msup><mo>&#x22C5;</mo><mi>f</mi></mrow>";
+      return x`r<sup>2</sup>&middot;f`;
     default:
-      return `<mi>${elem}</mi>`;
+      return x`${elem}`;
   }
 }
 
@@ -5955,7 +5957,9 @@ const vertexMapping = {
 class TriangleGroupDemo extends r$3 {
   static properties = {
     currentElement: { type: String },
-    animating: { type: Boolean }
+    animating: { type: Boolean },
+    // Holds a TemplateResult to display the formula
+    formula: { type: Object }
   };
 
   static styles = i$5`
@@ -5970,11 +5974,60 @@ class TriangleGroupDemo extends r$3 {
       text-align: center;
       color: #333;
     }
+    /* Flex container for the triangle and multiplication table */
+    .demo-container {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
     svg {
-      display: block;
-      margin: 0 auto 20px;
       overflow: visible;
     }
+    /* Multiplication table styles */
+    #multiplication-table {
+      font-family: monospace;
+      font-size: 16px;
+    }
+    #multiplication-table table {
+      border-collapse: collapse;
+    }
+    #multiplication-table th,
+    #multiplication-table td {
+      border: 1px solid #ccc;
+      padding: 5px 10px;
+      text-align: center;
+    }
+    /* Persistent table highlights */
+    .table-left-highlight {
+      background-color: rgba(255, 200, 200, 0.3);
+    }
+    .table-right-highlight {
+      background-color: rgba(200, 200, 255, 0.3);
+    }
+    .table-product-highlight {
+      background-color: rgba(200, 255, 200, 0.8);
+    }
+    /* Formula display highlight styles */
+    #formula-display {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .left-highlight {
+      background-color: rgba(255, 200, 200, 0.8);
+      padding: 0 4px;
+    }
+    .right-highlight {
+      background-color: rgba(200, 200, 255, 0.8);
+      padding: 0 4px;
+    }
+    .product-highlight {
+      background-color: rgba(200, 255, 200, 0.8);
+      padding: 0 4px;
+    }
+    /* Buttons and interactive sections */
     .buttons, .interactive {
       text-align: center;
       margin-top: 20px;
@@ -5992,11 +6045,6 @@ class TriangleGroupDemo extends r$3 {
     button:disabled {
       opacity: 0.6;
       cursor: not-allowed;
-    }
-    #formula-display {
-      text-align: center;
-      font-size: 24px;
-      margin-bottom: 20px;
     }
     section {
       background: #fff;
@@ -6028,36 +6076,52 @@ class TriangleGroupDemo extends r$3 {
 
   constructor() {
     super();
-    // Start with the identity element and no ongoing animation.
+    // Start with the identity element, no animation,
+    // and the formula display showing "1 · 1 = 1".
     this.currentElement = "1";
     this.animating = false;
+    this.formula = x`Result: <span class="left-highlight">${displayD3("1")}</span> &middot; <span class="right-highlight">${displayD3("1")}</span> = <span class="product-highlight">${displayD3("1")}</span>`;
   }
 
   firstUpdated() {
     this.resetDemo();
   }
 
-  /** Reset the demo to the identity element. */
+  /** Remove any persistent table highlights */
+  clearTableHighlights() {
+    const allCells = this.renderRoot.querySelectorAll(
+      '#multiplication-table td, #multiplication-table th'
+    );
+    allCells.forEach(cell => {
+      cell.classList.remove('table-left-highlight', 'table-right-highlight', 'table-product-highlight');
+    });
+  }
+
+  /** Reset the demo to the identity element and set initial highlights. */
   resetDemo() {
     this.currentElement = "1";
-    this.updateFormulaDisplay("1", "1", "1");
+    this.formula = x`Result: <span class="left-highlight">${displayD3("1")}</span> &middot; <span class="right-highlight">${displayD3("1")}</span> = <span class="product-highlight">${displayD3("1")}</span>`;
     this.updateVertices();
+    this.clearTableHighlights();
+    this.highlightMultiplicationCell("1", "1");
     const group = this.renderRoot.querySelector("#triangle-group");
     if (group) {
       group.setAttribute("transform", "");
     }
   }
 
-  /** Update the MathML formula display. */
+  /**
+   * Update the formula display by updating the reactive property `formula`.
+   */
   updateFormulaDisplay(factorLeft, factorRight, product) {
-    const formulaDisplay = this.renderRoot.querySelector("#formula-display");
-    if (formulaDisplay) {
-      formulaDisplay.innerHTML =
-        `Result: <math><mrow>${displayD3(factorLeft)}<mo>&#x22C5;</mo>${displayD3(factorRight)}<mo>=</mo>${displayD3(product)}</mrow></math>`;
-    }
+    this.formula = x`
+      Result: <span class="left-highlight">${displayD3(factorLeft)}</span> &middot; 
+      <span class="right-highlight">${displayD3(factorRight)}</span> = 
+      <span class="product-highlight">${displayD3(product)}</span>
+    `;
   }
 
-  /** Update the triangle’s vertex labels. */
+  /** Update the triangle’s vertex labels according to the current element */
   updateVertices() {
     const mapping = vertexMapping[this.currentElement];
     this.renderRoot.querySelector('#vertex-top').textContent = mapping.top;
@@ -6065,17 +6129,57 @@ class TriangleGroupDemo extends r$3 {
     this.renderRoot.querySelector('#vertex-left').textContent = mapping.left;
   }
 
-  // --- Transformation Handlers ---
-
   /**
-   * Identity transformation (scale up then back).
+   * Highlights the multiplication table for the current transformation.
+   * Clears previous highlights, then:
+   * - Adds a "table-left-highlight" class to all cells (and header cells)
+   *   that have data-left equal to the left factor.
+   * - Adds a "table-right-highlight" class to all cells with data-right equal
+   *   to the right factor.
+   * - For the main cell (with matching left and right factors), removes any
+   *   row/column highlights and adds "table-product-highlight".
    */
+  highlightMultiplicationCell(left, right) {
+    // Clear previous table highlights.
+    this.clearTableHighlights();
+    
+    // Highlight the entire row (left factor).
+    const rowCells = this.renderRoot.querySelectorAll(
+      `#multiplication-table [data-left="${left}"]`
+    );
+    rowCells.forEach(cell => {
+      cell.classList.add('table-left-highlight');
+    });
+    
+    // Highlight the entire column (right factor).
+    const colCells = this.renderRoot.querySelectorAll(
+      `#multiplication-table [data-right="${right}"]`
+    );
+    colCells.forEach(cell => {
+      cell.classList.add('table-right-highlight');
+    });
+    
+    // For the main cell, remove row/column highlights and add product highlight.
+    const mainCell = this.renderRoot.querySelector(
+      `#multiplication-table td[data-left="${left}"][data-right="${right}"]`
+    );
+    if (mainCell) {
+      mainCell.classList.remove('table-left-highlight', 'table-right-highlight');
+      mainCell.classList.add('table-product-highlight');
+    }
+  }
+
+  // --- Transformation Handlers ---
+  // (Each transformation updates the highlights and formula.)
+  
   handleIdentityClick() {
     if (this.animating) return;
     this.animating = true;
     const trans = '1';
-    const newElem = composeD3(trans, this.currentElement);
-    this.updateFormulaDisplay(trans, this.currentElement, newElem);
+    const oldElem = this.currentElement;
+    const newElem = composeD3(trans, oldElem);
+    this.highlightMultiplicationCell(trans, oldElem);
+    this.updateFormulaDisplay(trans, oldElem, newElem);
     const group = this.renderRoot.querySelector("#triangle-group");
     const anim = group.animate(
       [
@@ -6086,7 +6190,6 @@ class TriangleGroupDemo extends r$3 {
       { duration: 300, easing: "ease-out", fill: "forwards" }
     );
     anim.finished.then(() => {
-      // Cancel the animation to remove any lingering transform.
       anim.cancel();
       group.setAttribute("transform", "");
       this.currentElement = newElem;
@@ -6095,7 +6198,6 @@ class TriangleGroupDemo extends r$3 {
     });
   }
 
-  /** Animate a rotation from 0° to targetAngle. */
   animateRotation(targetAngle, duration, newElem) {
     const group = this.renderRoot.querySelector("#triangle-group");
     const startTime = performance.now();
@@ -6116,27 +6218,28 @@ class TriangleGroupDemo extends r$3 {
     requestAnimationFrame(animateStep);
   }
 
-  /** Handler for rotating 120° */
   handleRotate120Click() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'r';
-    const newElem = composeD3(trans, this.currentElement);
-    this.updateFormulaDisplay(trans, this.currentElement, newElem);
+    const oldElem = this.currentElement;
+    const newElem = composeD3(trans, oldElem);
+    this.highlightMultiplicationCell(trans, oldElem);
+    this.updateFormulaDisplay(trans, oldElem, newElem);
     this.animateRotation(120, 500, newElem);
   }
 
-  /** Handler for rotating 240° */
   handleRotate240Click() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'r2';
-    const newElem = composeD3(trans, this.currentElement);
-    this.updateFormulaDisplay(trans, this.currentElement, newElem);
+    const oldElem = this.currentElement;
+    const newElem = composeD3(trans, oldElem);
+    this.highlightMultiplicationCell(trans, oldElem);
+    this.updateFormulaDisplay(trans, oldElem, newElem);
     this.animateRotation(240, 1000, newElem);
   }
 
-  /** Animate a reflection by scaling x from 1 to -1. */
   animateReflection(duration, newElem) {
     const group = this.renderRoot.querySelector("#triangle-group");
     const startTime = performance.now();
@@ -6157,19 +6260,17 @@ class TriangleGroupDemo extends r$3 {
     requestAnimationFrame(animateStep);
   }
 
-  /** Handler for reflection */
   handleReflectClick() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'f';
-    const newElem = composeD3(trans, this.currentElement);
-    this.updateFormulaDisplay(trans, this.currentElement, newElem);
+    const oldElem = this.currentElement;
+    const newElem = composeD3(trans, oldElem);
+    this.highlightMultiplicationCell(trans, oldElem);
+    this.updateFormulaDisplay(trans, oldElem, newElem);
     this.animateReflection(500, newElem);
   }
 
-  /**
-   * Animate a flip (scale from 1 to –1) then a rotation (keeping scale at –1).
-   */
   animateFlipThenRotation(targetAngle, flipDuration, rotationDuration, newElem) {
     const group = this.renderRoot.querySelector("#triangle-group");
     const flipStartTime = performance.now();
@@ -6181,7 +6282,6 @@ class TriangleGroupDemo extends r$3 {
       if (progress < 1) {
         requestAnimationFrame(animateFlip);
       } else {
-        // Now animate the rotation while keeping scale at -1.
         const rotationStartTime = performance.now();
         const animateRotationPhase = (now2) => {
           const elapsed2 = now2 - rotationStartTime;
@@ -6203,41 +6303,49 @@ class TriangleGroupDemo extends r$3 {
     requestAnimationFrame(animateFlip);
   }
 
-  /** Handler for flip then rotate 120° */
   handleRFClick() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'rf';
-    const newElem = composeD3(trans, this.currentElement);
-    this.updateFormulaDisplay(trans, this.currentElement, newElem);
+    const oldElem = this.currentElement;
+    const newElem = composeD3(trans, oldElem);
+    this.highlightMultiplicationCell(trans, oldElem);
+    this.updateFormulaDisplay(trans, oldElem, newElem);
     this.animateFlipThenRotation(120, 500, 500, newElem);
   }
 
-  /** Handler for flip then rotate 240° */
   handleR2FClick() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'r2f';
-    const newElem = composeD3(trans, this.currentElement);
-    this.updateFormulaDisplay(trans, this.currentElement, newElem);
+    const oldElem = this.currentElement;
+    const newElem = composeD3(trans, oldElem);
+    this.highlightMultiplicationCell(trans, oldElem);
+    this.updateFormulaDisplay(trans, oldElem, newElem);
     this.animateFlipThenRotation(240, 500, 1000, newElem);
   }
 
   // --- Interactive Sections for Group Properties ---
+  // Instead of using string interpolation (which calls toString on a TemplateResult),
+  // we use Lit’s render() to update the container with a TemplateResult.
 
   handleInteractiveClosure() {
     const a = this.renderRoot.querySelector('#closure-a').value;
     const b = this.renderRoot.querySelector('#closure-b').value;
     const product = composeD3(a, b);
-    this.renderRoot.querySelector('#closure-result').innerHTML =
-      `Result: <math><mrow>${displayD3(a)}<mo>&#x22C5;</mo>${displayD3(b)}<mo>=</mo>${displayD3(product)}</mrow></math>. Closure holds because the result is in D₃.`;
+    const closureTemplate = x`
+      Result: ${displayD3(a)} &middot; ${displayD3(b)} = ${displayD3(product)}. Closure holds because the result is in D₃.
+    `;
+    B(closureTemplate, this.renderRoot.querySelector('#closure-result'));
   }
 
   handleInteractiveIdentityProp() {
     const a = this.renderRoot.querySelector('#identity-element').value;
     const product = composeD3("1", a);
-    this.renderRoot.querySelector('#identity-result-prop').innerHTML =
-      `Result: <math><mrow>${displayD3("1")}<mo>&#x22C5;</mo>${displayD3(a)}<mo>=</mo>${displayD3(product)}</mrow></math>. The identity element is 1.`;
+    const identityTemplate = x`
+      Result: ${displayD3("1")} &middot; ${displayD3(a)} = ${displayD3(product)}. The identity element is 1.
+    `;
+    B(identityTemplate, this.renderRoot.querySelector('#identity-result-prop'));
   }
 
   handleInteractiveAssociativityProp() {
@@ -6246,35 +6354,70 @@ class TriangleGroupDemo extends r$3 {
     const c = this.renderRoot.querySelector('#assoc-c').value;
     const left = composeD3(composeD3(a, b), c);
     const right = composeD3(a, composeD3(b, c));
-    let msg = `Result: <math><mrow>( ${displayD3(a)}<mo>&#x22C5;</mo>${displayD3(b)} )<mo>&#x22C5;</mo>${displayD3(c)}<mo>=</mo>${displayD3(left)}</mrow></math> and <math><mrow>${displayD3(a)}<mo>&#x22C5;</mo>( ${displayD3(b)}<mo>&#x22C5;</mo>${displayD3(c)} )<mo>=</mo>${displayD3(right)}</mrow></math>. `;
-    msg += (left === right) ? "Associativity holds." : "Associativity fails!";
-    this.renderRoot.querySelector('#associativity-result-prop').innerHTML = msg;
+    const assocTemplate = x`
+      Result: ( ${displayD3(a)} &middot; ${displayD3(b)} ) &middot; ${displayD3(c)} = ${displayD3(left)}
+      and ${displayD3(a)} &middot; ( ${displayD3(b)} &middot; ${displayD3(c)} ) = ${displayD3(right)}.
+      ${left === right ? 'Associativity holds.' : 'Associativity fails!'}
+    `;
+    B(assocTemplate, this.renderRoot.querySelector('#associativity-result-prop'));
   }
 
   handleInteractiveInverseProp() {
     const a = this.renderRoot.querySelector('#inverse-element').value;
     const inv = inverseD3(a);
-    this.renderRoot.querySelector('#inverse-result-prop').innerHTML =
-      `Result: <math><mrow>${displayD3(a)}<mo>&#x22C5;</mo>${displayD3(inv)}<mo>=</mo><mi>1</mi></mrow></math> Inverse holds.`;
+    const inverseTemplate = x`
+      Result: ${displayD3(a)} &middot; ${displayD3(inv)} = 1. Inverse holds.
+    `;
+    B(inverseTemplate, this.renderRoot.querySelector('#inverse-result-prop'));
   }
 
   render() {
+    // The order of elements (using the six D₃ elements) is important.
+    const elements = ["1", "r", "r2", "f", "rf", "r2f"];
     return x`
       <h1>Triangle Group Demonstration (Dihedral Group D₃)</h1>
       
-      <!-- Formula display -->
-      <div id="formula-display" data-test-id="formula-display"></div>
+      <!-- Formula display using the reactive property -->
+      <div id="formula-display" data-test-id="formula-display">${this.formula}</div>
       
-      <!-- SVG Triangle -->
-      <svg id="triangle-svg" width="300" height="300" viewBox="-150 -150 300 300" aria-label="Triangle group demonstration">
-        <g id="triangle-group">
-          <polygon points="0,-100 86.6,50 -86.6,50" fill="#007BFF" stroke="#0056b3" stroke-width="3"></polygon>
-          <text id="vertex-top" class="vertex-label" x="0" y="-60" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">1</text>
-          <text id="vertex-right" class="vertex-label" x="50" y="30" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">2</text>
-          <text id="vertex-left" class="vertex-label" x="-50" y="30" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">3</text>
-        </g>
-      </svg>
+      <!-- Container for the SVG triangle and multiplication table -->
+      <div class="demo-container">
+        <!-- SVG Triangle -->
+        <svg id="triangle-svg" width="300" height="300" viewBox="-150 -150 300 300" aria-label="Triangle group demonstration">
+          <g id="triangle-group">
+            <polygon points="0,-100 86.6,50 -86.6,50" fill="#007BFF" stroke="#0056b3" stroke-width="3"></polygon>
+            <text id="vertex-top" class="vertex-label" x="0" y="-60" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">1</text>
+            <text id="vertex-right" class="vertex-label" x="50" y="30" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">2</text>
+            <text id="vertex-left" class="vertex-label" x="-50" y="30" font-size="20" text-anchor="middle" fill="white" dominant-baseline="middle">3</text>
+          </g>
+        </svg>
+        
+        <!-- Multiplication Table for D₃ (generated dynamically with data attributes) -->
+        <div id="multiplication-table">
+          <table>
+            <thead>
+              <tr>
+                <th>*</th>
+                ${elements.map(el => x`<th data-right="${el}">${displayD3(el)}</th>`)}
+              </tr>
+            </thead>
+            <tbody>
+              ${elements.map(left => x`
+                <tr>
+                  <th data-left="${left}">${displayD3(left)}</th>
+                  ${elements.map(right => x`
+                    <td data-left="${left}" data-right="${right}">
+                      ${displayD3(composeD3(left, right))}
+                    </td>
+                  `)}
+                </tr>
+              `)}
+            </tbody>
+          </table>
+        </div>
+      </div>
       
+      <!-- Buttons -->
       <div class="buttons">
         <button id="identity-button" 
           aria-label="Apply identity transformation"
@@ -6295,7 +6438,7 @@ class TriangleGroupDemo extends r$3 {
           data-test-id="rotate-240-button"
           ?disabled="${this.animating}"
           @click="${this.handleRotate240Click}">
-          r² (Rotate 240°)
+          r<sup>2</sup> (Rotate 240°)
         </button>
         <button id="reflect-button" 
           aria-label="Reflect triangle"
@@ -6309,14 +6452,14 @@ class TriangleGroupDemo extends r$3 {
           data-test-id="rf-button"
           ?disabled="${this.animating}"
           @click="${this.handleRFClick}">
-          r·f
+          r&middot;f
         </button>
         <button id="r2f-button" 
           aria-label="Reflect then rotate 240 degrees"
           data-test-id="r2f-button"
           ?disabled="${this.animating}"
           @click="${this.handleR2FClick}">
-          r²·f
+          r<sup>2</sup>&middot;f
         </button>
         <button id="reset-button" 
           aria-label="Reset demonstration"
@@ -6448,12 +6591,6 @@ customElements.define("triangle-group-demo", TriangleGroupDemo);
 
 class MyApp extends r$3 {
   static styles = i$5`
-    :host {
-      display: block;
-      padding: 2rem;
-      font-family: system-ui, sans-serif;
-      background-color: #fafafa;
-    }
     header {
       text-align: center;
       margin-bottom: 2rem;
@@ -6467,16 +6604,38 @@ class MyApp extends r$3 {
     main.content {
       border: none;
     }
+    footer {
+      text-align: center;
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      color: #fff;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      font-size: 1rem;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+    }
   `;
 
   static properties = {
     activeView: { type: String },
+    randomVerse: { type: String },
   };
 
   constructor() {
     super();
     // No exhibit is selected by default.
     this.activeView = '';
+
+    // Array of complete Bible verses in RSV-CE
+    const verses = [
+      "Ecclesiastes 1:13 – 'And I applied my mind to seek and to search out by wisdom all that is done under heaven; it is an unhappy business that God has given to the sons of men to be busy with.'",
+      "Romans 1:20 – 'Ever since the creation of the world his invisible nature, namely, his eternal power and deity, has been clearly perceived in the things that have been made. So they are without excuse;'",
+      "Psalm 19:1 – 'The heavens are telling the glory of God; and the firmament proclaims his handiwork.'",
+      "Colossians 1:16–17 – 'For in him all things were created, in heaven and on earth, visible and invisible, whether thrones or dominions or principalities or authorities—all things were created through him and for him. He is before all things, and in him all things hold together.'",
+      "Proverbs 1:5 – 'The wise man also may hear and increase in learning, and the man of understanding acquire skill,'"
+    ];
+
+    // Select a random Bible verse
+    this.randomVerse = verses[Math.floor(Math.random() * verses.length)];
   }
 
   handleMenuClick(view) {
@@ -6523,6 +6682,9 @@ class MyApp extends r$3 {
           ? x`<p>Web Programming Exhibit coming soon!</p>`
           : x`<p>Welcome to the Museum of Mathematics. Please select an exhibit from the menu above.</p>`}
       </main>
+      <footer>
+        <p>${this.randomVerse}</p>
+      </footer>
     `;
   }
 }
