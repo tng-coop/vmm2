@@ -6596,6 +6596,276 @@ class TriangleGroupDemo extends r$3 {
 
 customElements.define("triangle-group-demo", TriangleGroupDemo);
 
+// src/react-render-demo.js
+
+// Define the simulation steps.
+// These steps simulate what happens when a simple React component renders and then re-renders.
+const steps = [
+  {
+    id: 0,
+    code: "function Counter() {",
+    description: "Define the component function.",
+    state: {}
+  },
+  {
+    id: 1,
+    code: "  const [count, setCount] = useState(0);",
+    description: "Initialize state with count = 0.",
+    state: { count: 0 }
+  },
+  {
+    id: 2,
+    code: "  const increment = () => {",
+    description: "Define the increment function.",
+    state: { count: 0 }
+  },
+  {
+    id: 3,
+    code: "    setCount(count + 1);",
+    description: "When called, this function will increment count.",
+    state: { count: 0 }
+  },
+  {
+    id: 4,
+    code: "  };",
+    description: "Close the increment function definition.",
+    state: { count: 0 }
+  },
+  {
+    id: 5,
+    code: "  return (",
+    description: "Start the render: returning the component’s JSX.",
+    state: { count: 0 }
+  },
+  {
+    id: 6,
+    code: "    <div>",
+    description: "Render a container div.",
+    state: { count: 0 }
+  },
+  {
+    id: 7,
+    code: "      <h1>Count: {count}</h1>",
+    description: "Render a heading showing the current count.",
+    state: { count: 0 }
+  },
+  {
+    id: 8,
+    code: "      <button onClick={increment}>Increment</button>",
+    description: "Render a button wired to trigger the increment function.",
+    state: { count: 0 }
+  },
+  {
+    id: 9,
+    code: "    </div>",
+    description: "Close the container div.",
+    state: { count: 0 }
+  },
+  {
+    id: 10,
+    code: "  );",
+    description: "Finish the JSX return.",
+    state: { count: 0 }
+  },
+  {
+    id: 11,
+    code: "}",
+    description: "End of the Counter component.",
+    state: { count: 0 }
+  },
+  // --- Now simulate a user action that triggers a re-render ---
+  {
+    id: 12,
+    code: "// User clicks the Increment button",
+    description: "A click event occurs on the button.",
+    state: { count: 0 }
+  },
+  {
+    id: 13,
+    code: "setCount(count + 1);",
+    description: "Inside increment: update state so that count becomes 1.",
+    state: { count: 1 }
+  },
+  {
+    id: 14,
+    code: "// React schedules a re-render",
+    description: "After the state update, React triggers a re-render.",
+    state: { count: 1 }
+  },
+  {
+    id: 15,
+    code: "return (",
+    description: "Start re-render with the updated state.",
+    state: { count: 1 }
+  },
+  {
+    id: 16,
+    code: "  <div>",
+    description: "Render the container div again.",
+    state: { count: 1 }
+  },
+  {
+    id: 17,
+    code: "    <h1>Count: {count}</h1>",
+    description: "Render the heading; it now shows count = 1.",
+    state: { count: 1 }
+  },
+  {
+    id: 18,
+    code: "    <button onClick={increment}>Increment</button>",
+    description: "Render the button again.",
+    state: { count: 1 }
+  },
+  {
+    id: 19,
+    code: "  </div>",
+    description: "Close the container div.",
+    state: { count: 1 }
+  },
+  {
+    id: 20,
+    code: ");",
+    description: "Finish the re-render.",
+    state: { count: 1 }
+  }
+];
+
+class ReactRenderDemo extends r$3 {
+  static properties = {
+    currentStep: { type: Number }
+  };
+
+  static styles = i$5`
+    :host {
+      display: block;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f8f8f8;
+    }
+    h2 {
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .code-panel {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      flex: 1;
+      min-width: 300px;
+      max-height: 400px;
+      overflow: auto;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+    .code-line {
+      display: block;
+      padding: 2px 5px;
+    }
+    .code-line.highlight {
+      background: #fffa8c;
+    }
+    .info-panel {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 4px;
+      flex: 1;
+      min-width: 300px;
+    }
+    .controls {
+      margin-top: 20px;
+      text-align: center;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background-color: #007bff;
+      color: #fff;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  `;
+
+  constructor() {
+    super();
+    this.currentStep = 0;
+  }
+
+  nextStep() {
+    if (this.currentStep < steps.length - 1) {
+      this.currentStep++;
+    }
+  }
+
+  prevStep() {
+    if (this.currentStep > 0) {
+      this.currentStep--;
+    }
+  }
+
+  reset() {
+    this.currentStep = 0;
+  }
+
+  render() {
+    return x`
+      <h2>React Render Process Demo</h2>
+      <div class="container">
+        <!-- Code Panel: Displays the code step-by-step -->
+        <div class="code-panel">
+          <h3>Component Code</h3>
+          ${steps.map(
+            (step, index) => x`
+              <div class="code-line ${this.currentStep === index
+                ? 'highlight'
+                : ''}">
+                ${step.code}
+              </div>
+            `
+          )}
+        </div>
+        <!-- Info Panel: Displays the current step details -->
+        <div class="info-panel">
+          <h3>Step Details</h3>
+          <p>
+            <strong>Description:</strong>
+            ${steps[this.currentStep].description}
+          </p>
+          <p>
+            <strong>Internal State:</strong>
+            ${JSON.stringify(steps[this.currentStep].state)}
+          </p>
+          <div class="controls">
+            <button @click=${this.prevStep} ?disabled=${this.currentStep === 0}>
+              Previous Step
+            </button>
+            <button
+              @click=${this.nextStep}
+              ?disabled=${this.currentStep === steps.length - 1}
+            >
+              Next Step
+            </button>
+            <button @click=${this.reset}>Reset</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+customElements.define('react-render-demo', ReactRenderDemo);
+
+// src/main.js
+
 class MyApp extends r$3 {
   static styles = i$5`
     header {
@@ -6686,7 +6956,7 @@ class MyApp extends r$3 {
           : this.activeView === 'other'
           ? x`<triangle-group-demo></triangle-group-demo>`
           : this.activeView === 'webprogramming'
-          ? x`<p>Web Programming Exhibit coming soon!</p>`
+          ? x`<react-render-demo></react-render-demo>`
           : x`<p>Welcome to the Museum of Mathematics. Please select an exhibit from the menu above.</p>`}
       </main>
       <footer>
