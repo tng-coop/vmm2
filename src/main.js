@@ -11,12 +11,6 @@ import './triangle-group-demo.js';
 
 export class MyApp extends LitElement {
   static styles = css`
-    :host {
-      display: block;
-      padding: 2rem;
-      font-family: system-ui, sans-serif;
-      background-color: #fafafa;
-    }
     header {
       text-align: center;
       margin-bottom: 2rem;
@@ -30,16 +24,38 @@ export class MyApp extends LitElement {
     main.content {
       border: none;
     }
+    footer {
+      text-align: center;
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      color: #fff;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      font-size: 1rem;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+    }
   `;
 
   static properties = {
     activeView: { type: String },
+    randomVerse: { type: String },
   };
 
   constructor() {
     super();
     // No exhibit is selected by default.
     this.activeView = '';
+
+    // Array of complete Bible verses in RSV-CE
+    const verses = [
+      "Ecclesiastes 1:13 – 'And I applied my mind to seek and to search out by wisdom all that is done under heaven; it is an unhappy business that God has given to the sons of men to be busy with.'",
+      "Romans 1:20 – 'Ever since the creation of the world his invisible nature, namely, his eternal power and deity, has been clearly perceived in the things that have been made. So they are without excuse;'",
+      "Psalm 19:1 – 'The heavens are telling the glory of God; and the firmament proclaims his handiwork.'",
+      "Colossians 1:16–17 – 'For in him all things were created, in heaven and on earth, visible and invisible, whether thrones or dominions or principalities or authorities—all things were created through him and for him. He is before all things, and in him all things hold together.'",
+      "Proverbs 1:5 – 'The wise man also may hear and increase in learning, and the man of understanding acquire skill,'"
+    ];
+
+    // Select a random Bible verse
+    this.randomVerse = verses[Math.floor(Math.random() * verses.length)];
   }
 
   handleMenuClick(view) {
@@ -86,6 +102,9 @@ export class MyApp extends LitElement {
           ? html`<p>Web Programming Exhibit coming soon!</p>`
           : html`<p>Welcome to the Museum of Mathematics. Please select an exhibit from the menu above.</p>`}
       </main>
+      <footer>
+        <p>${this.randomVerse}</p>
+      </footer>
     `;
   }
 }
