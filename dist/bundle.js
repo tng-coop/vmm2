@@ -386,7 +386,7 @@ var ShoelaceElement = class extends r$3 {
 _hasRecordedInitialProperties = new WeakMap();
 /* eslint-disable */
 // @ts-expect-error This is auto-injected at build time.
-ShoelaceElement.version = "2.19.1";
+ShoelaceElement.version = "2.20.0";
 ShoelaceElement.dependencies = {};
 __decorateClass([
   n$3()
@@ -1355,22 +1355,6 @@ function getTextContent(slot) {
   return text;
 }
 
-// src/components/icon/icon.styles.ts
-var icon_styles_default = i$5`
-  :host {
-    display: inline-block;
-    width: 1em;
-    height: 1em;
-    box-sizing: content-box !important;
-  }
-
-  svg {
-    display: block;
-    height: 100%;
-    width: 100%;
-  }
-`;
-
 // src/utilities/base-path.ts
 var basePath = "";
 function setBasePath(path) {
@@ -1539,6 +1523,22 @@ function unwatchIcon(icon) {
 function getIconLibrary(name) {
   return registry.find((lib) => lib.name === name);
 }
+
+// src/components/icon/icon.styles.ts
+var icon_styles_default = i$5`
+  :host {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    box-sizing: content-box !important;
+  }
+
+  svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+  }
+`;
 
 // src/internal/watch.ts
 function watch(propertyName, options) {
@@ -2106,8 +2106,15 @@ function isTabbable(el) {
   if (el.closest("[inert]")) {
     return false;
   }
-  if (tag === "input" && el.getAttribute("type") === "radio" && !el.hasAttribute("checked")) {
-    return false;
+  if (tag === "input" && el.getAttribute("type") === "radio") {
+    const rootNode = el.getRootNode();
+    const findRadios = `input[type='radio'][name="${el.getAttribute("name")}"]`;
+    const firstChecked = rootNode.querySelector(`${findRadios}:checked`);
+    if (firstChecked) {
+      return firstChecked === el;
+    }
+    const firstRadio = rootNode.querySelector(findRadios);
+    return firstRadio === el;
   }
   if (!isVisible(el)) {
     return false;
