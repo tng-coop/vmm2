@@ -57,6 +57,8 @@ export class ReactProgrammingDemo extends LitElement {
     this.activeBox = 'parent'; // 'parent' (caller) or 'definition' (component definition)
     this.parentGroupIndex = 0;
     this.definitionGroupIndex = 0;
+    // When the user starts typing, we want the live demo (web browser) to be permanently enabled.
+    this.browserEnabled = false;
   }
 
   connectedCallback() {
@@ -248,7 +250,8 @@ export default App;
     // Bottom half: displays debug/inner state message.
     const demoBottom = document.createElement('div');
     demoBottom.className = 'demo-bottom';
-    // (The live demo is shown only in parent's final group.)
+    // In parent's mode, the demo is normally shown only for the final group.
+    // But once browserEnabled is true, it stays visible.
     demoBottom.textContent = 'Inner state: ' + demoGreeting;
 
     demoArea.appendChild(demoTop);
@@ -267,11 +270,11 @@ export default App;
         const [start, end] = this.parentGroups[this.parentGroupIndex];
         parentPrism.setAttribute('highlight', `${start}-${end}`);
         definitionPrism.setAttribute('highlight', '');
-        // Disable "Previous" only at the very start.
         prevButton.disabled = (this.parentGroupIndex === 0);
-        nextButton.disabled = false;
-        // Show the live demo only when the final parent's group (the render call) is active.
-        if (this.parentGroupIndex === this.parentGroups.length - 1) {
+        // Disable the Next button if we are at the final parent's group.
+        nextButton.disabled = (this.parentGroupIndex === this.parentGroups.length - 1);
+        // Show the live demo if either we're in parent's final group or the browser has been enabled.
+        if (this.browserEnabled || this.parentGroupIndex === this.parentGroups.length - 1) {
           demoTop.style.display = 'block';
           demoBottom.style.display = 'block';
           demoBottom.textContent = 'Inner state: ' + demoGreeting;
@@ -285,13 +288,20 @@ export default App;
         parentPrism.setAttribute('highlight', '');
         prevButton.disabled = false;
         nextButton.disabled = false;
-        // *** FIX: Always hide the live demo in definition mode (even at the final group).
-        demoTop.style.display = 'none';
-        demoBottom.style.display = 'none';
+        // If browserEnabled is true, show the live demo even in definition mode.
+        if (this.browserEnabled) {
+          demoTop.style.display = 'block';
+          demoBottom.style.display = 'block';
+          demoBottom.textContent = "Component definition complete. State: 'greeting' = '" + demoGreeting + "'.";
+        } else {
+          demoTop.style.display = 'none';
+          demoBottom.style.display = 'none';
+        }
       }
       console.log("Active Box:", this.activeBox, 
                   "Parent Group Index:", this.parentGroupIndex, 
-                  "Definition Group Index:", this.definitionGroupIndex);
+                  "Definition Group Index:", this.definitionGroupIndex,
+                  "Browser Enabled:", this.browserEnabled);
     };
 
     updateHighlight();
@@ -301,7 +311,7 @@ export default App;
     // ---------------------------
     nextButton.addEventListener('click', () => {
       if (this.activeBox === 'parent') {
-        // In parent's mode, only groups 0,1,2 are shown.
+        // In parent's mode, only groups 0,1,2 are normally shown.
         if (this.parentGroupIndex < this.parentGroups.length - 2) { // i.e. if index < 2
           this.parentGroupIndex++;
         } else if (this.parentGroupIndex === this.parentGroups.length - 2) {
@@ -352,12 +362,27 @@ export default App;
     demoInput.addEventListener('input', (event) => {
       demoGreeting = event.target.value;
       demoHeading.textContent = demoGreeting;
-      // Only update the debug text when the demo is visible.
-      if (this.activeBox === 'parent' && this.parentGroupIndex === this.parentGroups.length - 1) {
-        demoBottom.textContent = 'Inner state: ' + demoGreeting;
-      } else {
-        demoBottom.textContent = '';
+      
+      // When the user types, automatically switch to definition mode if not already there.
+      if (this.activeBox !== 'definition') {
+        this.activeBox = 'definition';
+        this.definitionGroupIndex = this.definitionGroups.length - 1; // final definition group
+        // Enable the web browser permanently.
+        this.browserEnabled = true;
+        updateHighlight();
       }
+      
+      // In definition mode, temporarily blink a highlight on the definition block.
+      const originalHighlight = definitionPrism.getAttribute('highlight') || '';
+      // Temporarily set the highlight to cover the main block (e.g., lines 3-17)
+      definitionPrism.setAttribute('highlight', '3-17');
+      Prism.highlightElement(definitionPrism.querySelector('code'));
+      demoBottom.textContent = "Component definition complete. State: 'greeting' = '" + demoGreeting + "'.";
+      // Blink for 100ms, then remove any highlighting.
+      setTimeout(() => {
+        definitionPrism.setAttribute('highlight', '');
+        Prism.highlightElement(definitionPrism.querySelector('code'));
+      }, 500);
     });
   }
 }
