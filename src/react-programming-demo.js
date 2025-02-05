@@ -9,17 +9,51 @@ export class ReactProgrammingDemo extends LitElement {
 
   constructor() {
     super();
-    // We work with statement groups.
-    // For the parent's (caller) code sample, the groups (using 1-indexed line numbers) are:
-    //   Group 0: [1, 1] → "import React from 'react';"
-    //   Group 1: [2, 2] → "import ReactDOM from 'react-dom';"
-    //   Group 2: [3, 3] → "import App from './App';"
-    //   Group 3: [4, 9] → The entire ReactDOM.render( … );
+    // --- Parent (caller) code groups (absolute line numbers, including empty lines):
+    // Suppose the parent's file looks like this:
+    // Line 1: import React from 'react';
+    // Line 2: import ReactDOM from 'react-dom';
+    // Line 3: import App from './App';
+    // Line 4: (empty)
+    // Lines 5–10: ReactDOM.render( ... );
+    // We will navigate only groups 0–2 (the first three lines).
+    this.parentGroups = [
+      [1, 1],   // Group 0: line 1
+      [2, 2],   // Group 1: line 2
+      [3, 3],   // Group 2: line 3
+      [5, 10]   // Group 3: the render call (used when coming back from definition)
+    ];
+
+    // --- Component Definition code groups (absolute line numbers, counting empty lines):
+    // The component definition file (18 lines total) is assumed to be:
+    // Line 1: import React, { useState } from 'react';
+    // Line 2: (empty)
+    // Line 3: const App = () => {
+    // Line 4:   const [greeting, setGreeting] = useState('Hello Function Component!');
+    // Line 5: (empty)
+    // Line 6:   return (
+    // Line 7:     <div>
+    // Line 8:       <h1>{greeting}</h1>
+    // Line 9:       <input 
+    // Line 10:         type="text"
+    // Line 11:         value={greeting}
+    // Line 12:         onChange={(event) => setGreeting(event.target.value)}
+    // Line 13:       />
+    // Line 14:     </div>
+    // Line 15:   );
+    // Line 16: };
+    // Line 17: (empty)
+    // Line 18: export default App;
     //
-    // For the component definition code sample, the groups are:
-    //   Group 0: [1, 1] → "import React, { useState } from 'react';"
-    //   Group 1: [3, 16] → The definition of App (arrow function with its body)
-    //   Group 2: [18, 18] → "export default App;"
+    // We define two groups:
+    // Group 0: [1,17] → the entire definition except the final export line (incomplete definition)
+    // Group 1: [18,18] → the export statement (definition complete)
+    this.definitionGroups = [
+      [1, 17],
+      [18, 18],
+    ];
+
+    // Start with parent's (caller) code active.
     this.activeBox = 'parent'; // 'parent' (caller) or 'definition' (component definition)
     this.parentGroupIndex = 0;
     this.definitionGroupIndex = 0;
@@ -35,7 +69,7 @@ export class ReactProgrammingDemo extends LitElement {
     this.replaceChildren();
 
     // ---------------------------
-    // Define code samples.
+    // Define our code samples.
     // ---------------------------
     const parentCode = `
 import React from 'react';
@@ -72,22 +106,7 @@ export default App;
     `.trim();
 
     // ---------------------------
-    // Define statement group boundaries.
-    // Each group is [startLine, endLine] (1-indexed).
-    const parentGroups = [
-      [1, 1],   // import React from 'react';
-      [2, 2],   // import ReactDOM from 'react-dom';
-      [3, 3],   // import App from './App';
-      [4, 9]    // The entire ReactDOM.render(…) call.
-    ];
-    const definitionGroups = [
-      [1, 1],    // import React, { useState } from 'react';
-      [3, 16],   // Definition of App (arrow function with its body)
-      [18, 18]   // export default App;
-    ];
-
-    // ---------------------------
-    // Create main container.
+    // Create the main container.
     // ---------------------------
     const container = document.createElement('div');
     container.className = 'reactprogramming-demo';
@@ -99,7 +118,7 @@ export default App;
         height: 100%;
         font-family: sans-serif;
       }
-      /* LEFT COLUMN: Two code boxes side by side */
+      /* LEFT COLUMN: Two code boxes arranged side by side */
       .left-code-container {
         flex: 2;
         padding: 10px;
@@ -135,7 +154,7 @@ export default App;
         justify-content: space-between;
       }
       .demo-top {
-        /* Live demo */
+        /* Top half: live demo */
       }
       .demo-bottom {
         border-top: 1px solid #ccc;
@@ -153,7 +172,7 @@ export default App;
 
     // ---------------------------
     // LEFT COLUMN: Create two code boxes.
-    // (Swapped order: parent's code on the left, component definition on the right.)
+    // (Swapped order: parent's code on the left, component definition code on the right.)
     const leftCodeContainer = document.createElement('div');
     leftCodeContainer.className = 'left-code-container';
 
@@ -167,21 +186,21 @@ export default App;
     parentPrism.setAttribute('code', parentCode);
     parentPrism.setAttribute('language', 'javascript');
     if (this.activeBox === 'parent') {
-      const [start, end] = parentGroups[this.parentGroupIndex];
+      const [start, end] = this.parentGroups[this.parentGroupIndex];
       parentPrism.setAttribute('highlight', `${start}-${end}`);
     } else {
       parentPrism.setAttribute('highlight', '');
     }
     parentBox.appendChild(parentPrism);
 
-    // Component definition code box.
+    // Component Definition code box.
     const definitionBox = document.createElement('div');
     definitionBox.className = 'code-box';
     const definitionPrism = document.createElement('prism-code');
     definitionPrism.setAttribute('code', componentDefinitionCode);
     definitionPrism.setAttribute('language', 'javascript');
     if (this.activeBox === 'definition') {
-      const [start, end] = definitionGroups[this.definitionGroupIndex];
+      const [start, end] = this.definitionGroups[this.definitionGroupIndex];
       definitionPrism.setAttribute('highlight', `${start}-${end}`);
     } else {
       definitionPrism.setAttribute('highlight', '');
@@ -192,7 +211,7 @@ export default App;
     codeBoxes.appendChild(definitionBox);
     leftCodeContainer.appendChild(codeBoxes);
 
-    // Navigation buttons (using sl-button).
+    // Navigation buttons (only "Previous" and "Next" remain).
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
 
@@ -204,19 +223,8 @@ export default App;
     nextButton.setAttribute('variant', 'primary');
     nextButton.textContent = 'Next';
 
-    const backToParentButton = document.createElement('sl-button');
-    backToParentButton.setAttribute('variant', 'primary');
-    backToParentButton.textContent = 'Back to Parent';
-
-    // New button: Skip to Component Definition.
-    const skipToDefinitionButton = document.createElement('sl-button');
-    skipToDefinitionButton.setAttribute('variant', 'primary');
-    skipToDefinitionButton.textContent = 'Skip to Component Definition';
-
     buttonContainer.appendChild(prevButton);
     buttonContainer.appendChild(nextButton);
-    buttonContainer.appendChild(backToParentButton);
-    buttonContainer.appendChild(skipToDefinitionButton);
     leftCodeContainer.appendChild(buttonContainer);
 
     // ---------------------------
@@ -237,15 +245,20 @@ export default App;
     demoTop.appendChild(demoHeading);
     demoTop.appendChild(demoInput);
 
-    // Bottom half: display inner state.
+    // Bottom half: displays debug/inner state message.
     const demoBottom = document.createElement('div');
     demoBottom.className = 'demo-bottom';
+    // In parent's mode, show a generic message.
     demoBottom.textContent = 'Inner state: ' + demoGreeting;
+    // In definition mode, if the active group is not the final one, leave it empty.
+    if (this.activeBox === 'definition' && this.definitionGroupIndex < this.definitionGroups.length - 1) {
+      demoBottom.textContent = '';
+    }
 
     demoArea.appendChild(demoTop);
     demoArea.appendChild(demoBottom);
 
-    // Append left and middle columns.
+    // Append left (code) and middle (demo) columns to the main container.
     container.appendChild(leftCodeContainer);
     container.appendChild(demoArea);
     this.appendChild(container);
@@ -255,22 +268,25 @@ export default App;
     // ---------------------------
     const updateHighlight = () => {
       if (this.activeBox === 'parent') {
-        const [start, end] = parentGroups[this.parentGroupIndex];
+        const [start, end] = this.parentGroups[this.parentGroupIndex];
         parentPrism.setAttribute('highlight', `${start}-${end}`);
         definitionPrism.setAttribute('highlight', '');
-        // In parent's mode, disable Previous if at first group.
         prevButton.disabled = (this.parentGroupIndex === 0);
-        // Always enable Next in parent's mode (to allow transition).
         nextButton.disabled = false;
+        demoBottom.textContent = 'Inner state: ' + demoGreeting;
       } else { // activeBox === 'definition'
-        const [start, end] = definitionGroups[this.definitionGroupIndex];
+        const [start, end] = this.definitionGroups[this.definitionGroupIndex];
         definitionPrism.setAttribute('highlight', `${start}-${end}`);
         parentPrism.setAttribute('highlight', '');
-        // In definition mode, always enable Previous so that pressing it at group 0 jumps back.
-        prevButton.disabled = false;
-        nextButton.disabled = (this.definitionGroupIndex === definitionGroups.length - 1);
+        prevButton.disabled = false; // Always enable Previous in definition mode.
+        nextButton.disabled = (this.definitionGroupIndex === this.definitionGroups.length - 1) ? false : false;
+        // If the definition is not yet complete, leave the debug window empty.
+        if (this.definitionGroupIndex < this.definitionGroups.length - 1) {
+          demoBottom.textContent = '';
+        } else {
+          demoBottom.textContent = "Component definition complete. State: 'greeting' = '" + demoGreeting + "'.";
+        }
       }
-      backToParentButton.disabled = (this.activeBox === 'parent');
       console.log("Active Box:", this.activeBox, 
                   "Parent Group Index:", this.parentGroupIndex, 
                   "Definition Group Index:", this.definitionGroupIndex);
@@ -283,16 +299,21 @@ export default App;
     // ---------------------------
     nextButton.addEventListener('click', () => {
       if (this.activeBox === 'parent') {
-        if (this.parentGroupIndex < parentGroups.length - 1) {
+        if (this.parentGroupIndex < this.parentGroups.length - 1) {
           this.parentGroupIndex++;
         } else {
-          // At end of parent's statements; switch to component definition.
+          // After finishing parent's group 2 ("import App from './App';"), switch to component definition.
           this.activeBox = 'definition';
           this.definitionGroupIndex = 0;
         }
       } else { // activeBox === 'definition'
-        if (this.definitionGroupIndex < definitionGroups.length - 1) {
+        if (this.definitionGroupIndex < this.definitionGroups.length - 1) {
           this.definitionGroupIndex++;
+        } else {
+          // When at the final group of definition ("export default App;"),
+          // pressing Next goes back to the parent's last group (the render call).
+          this.activeBox = 'parent';
+          this.parentGroupIndex = this.parentGroups.length - 1;
         }
       }
       updateHighlight();
@@ -306,9 +327,9 @@ export default App;
         if (this.definitionGroupIndex > 0) {
           this.definitionGroupIndex--;
         } else {
-          // At beginning of component definition; jump back to parent's last statement.
+          // At beginning of component definition; jump back to parent's last group.
           this.activeBox = 'parent';
-          this.parentGroupIndex = parentGroups.length - 1;
+          this.parentGroupIndex = this.parentGroups.length - 1;
         }
       } else { // activeBox === 'parent'
         if (this.parentGroupIndex > 0) {
@@ -319,31 +340,18 @@ export default App;
     });
 
     // ---------------------------
-    // Back to Parent Button: Switch active box to parent's code.
-    // ---------------------------
-    backToParentButton.addEventListener('click', () => {
-      if (this.activeBox === 'definition') {
-        this.activeBox = 'parent';
-      }
-      updateHighlight();
-    });
-
-    // ---------------------------
-    // Skip to Component Definition Button: Immediately jump to component definition.
-    // ---------------------------
-    skipToDefinitionButton.addEventListener('click', () => {
-      this.activeBox = 'definition';
-      this.definitionGroupIndex = 0;
-      updateHighlight();
-    });
-
-    // ---------------------------
     // Live Demo: Update inner state as user types.
     // ---------------------------
     demoInput.addEventListener('input', (event) => {
       demoGreeting = event.target.value;
       demoHeading.textContent = demoGreeting;
-      demoBottom.textContent = 'Inner state: ' + demoGreeting;
+      if (this.activeBox === 'definition' && this.definitionGroupIndex === this.definitionGroups.length - 1) {
+        demoBottom.textContent = "Component definition complete. State: 'greeting' = '" + demoGreeting + "'.";
+      } else if (this.activeBox === 'definition' && this.definitionGroupIndex === 4) {
+        demoBottom.textContent = 'JSX renders greeting: ' + demoGreeting;
+      } else {
+        demoBottom.textContent = 'Inner state: ' + demoGreeting;
+      }
     });
   }
 }
