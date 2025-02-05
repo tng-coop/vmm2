@@ -3,19 +3,19 @@ import { LitElement } from 'lit';
 import './prism-code.js'; // ensure Prism is registered
 
 export class ReactProgrammingDemo extends LitElement {
-  // Override createRenderRoot to avoid using shadow DOM so that global CSS (e.g. Prism’s theme)
-  // can easily style the inner content.
+  // Render into the light DOM so that global CSS (e.g. Prism’s theme) applies.
   createRenderRoot() {
     return this;
   }
 
   constructor() {
     super();
-    // No shadow DOM is used for easier styling.
+    // Set the initial highlighted line to 1 now.
+    this.currentHighlightLine = 1;
   }
 
   connectedCallback() {
-    super.connectedCallback(); // Always call the parent’s connectedCallback.
+    super.connectedCallback();
     this.renderDemo();
   }
 
@@ -27,19 +27,19 @@ export class ReactProgrammingDemo extends LitElement {
     const container = document.createElement('div');
     container.className = 'reactprogramming-demo';
 
-    // Insert CSS styles. These styles will affect the container’s children.
+    // Insert CSS styles for the layout and buttons.
     const style = document.createElement('style');
     style.textContent = `
-      /* Main container uses flexbox to create columns */
+      /* Flex layout for two columns */
       .reactprogramming-demo {
         display: flex;
       }
-      /* The left column (code area) takes up more space */
+      /* Left column: Code area */
       .code-area {
         flex: 2;
         padding: 10px;
       }
-      /* The right column (explain area) takes less space, with a left border */
+      /* Right column: Explanation area */
       .explain-area {
         flex: 1;
         padding: 10px;
@@ -55,16 +55,20 @@ export class ReactProgrammingDemo extends LitElement {
         background-color: #f5f5f5;
         font-family: sans-serif;
       }
+      /* Container for the navigation buttons */
+      .button-container {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+      }
     `;
-    // Append the <style> element as the first child of the container.
     container.appendChild(style);
 
-    // Create the left column for the code.
+    // LEFT COLUMN: Code Area
     const codeArea = document.createElement('div');
     codeArea.className = 'code-area';
 
-    // Create and configure the <prism-code> element.
-    const prismCodeElement = document.createElement('prism-code');
+    // The code snippet to display.
     const code = `
 import React from 'react';
 
@@ -77,30 +81,81 @@ const HelloWorld = () => (
 
 export default HelloWorld;
     `;
-    prismCodeElement.setAttribute('code', code.trim());
-    prismCodeElement.setAttribute('language', 'javascript');
-    prismCodeElement.setAttribute('highlight', '2');
+    // Trim and calculate the total number of lines.
+    const trimmedCode = code.trim();
+    const codeLines = trimmedCode.split('\n');
+    const totalLines = codeLines.length;
 
-    // Append the code element to the left area.
+    // Create the <prism-code> element.
+    const prismCodeElement = document.createElement('prism-code');
+    prismCodeElement.setAttribute('code', trimmedCode);
+    prismCodeElement.setAttribute('language', 'javascript');
+    // Set the initial highlighted line.
+    prismCodeElement.setAttribute('highlight', this.currentHighlightLine.toString());
+
     codeArea.appendChild(prismCodeElement);
 
-    // Create the right column for the explanation.
+    // Create a container for the navigation buttons.
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'button-container';
+
+    // Create the "Previous" button.
+    const prevButton = document.createElement('sl-button');
+    prevButton.setAttribute('variant', 'primary');
+    prevButton.textContent = 'Previous';
+
+    // Create the "Next" button.
+    const nextButton = document.createElement('sl-button');
+    nextButton.setAttribute('variant', 'primary');
+    nextButton.textContent = 'Next';
+
+    // Append buttons to the button container.
+    buttonContainer.appendChild(prevButton);
+    buttonContainer.appendChild(nextButton);
+
+    // Append the button container to the code area.
+    codeArea.appendChild(buttonContainer);
+
+    // Function to update the highlighted line and button disabled states.
+    const updateHighlight = () => {
+      prismCodeElement.setAttribute('highlight', this.currentHighlightLine.toString());
+      prevButton.disabled = this.currentHighlightLine <= 1;
+      nextButton.disabled = this.currentHighlightLine >= totalLines;
+    };
+
+    // Initialize the button states.
+    updateHighlight();
+
+    // Update the highlight when "Previous" is clicked.
+    prevButton.addEventListener('click', () => {
+      if (this.currentHighlightLine > 1) {
+        this.currentHighlightLine--;
+        updateHighlight();
+      }
+    });
+
+    // Update the highlight when "Next" is clicked.
+    nextButton.addEventListener('click', () => {
+      if (this.currentHighlightLine < totalLines) {
+        this.currentHighlightLine++;
+        updateHighlight();
+      }
+    });
+
+    // RIGHT COLUMN: Explanation Area with "hello" box.
     const explainArea = document.createElement('div');
     explainArea.className = 'explain-area';
 
-    // Create the "hello" box.
     const helloBox = document.createElement('div');
     helloBox.className = 'hello-box';
     helloBox.textContent = 'hello';
-
-    // Append the hello box to the explanation area.
     explainArea.appendChild(helloBox);
 
-    // Append both columns to the main container.
+    // Append both the code area and explanation area to the main container.
     container.appendChild(codeArea);
     container.appendChild(explainArea);
 
-    // Finally, append the container to this custom element.
+    // Append the main container to the component.
     this.appendChild(container);
   }
 }
