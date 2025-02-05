@@ -3,10 +3,14 @@ import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript.js'; // load JavaScript syntax highlighting
 import 'prismjs/themes/prism.css';              // load PrismJS CSS theme
 
+// Import the Line Highlight plugin (both JS and CSS)
+import 'prismjs/plugins/line-highlight/prism-line-highlight.js';
+import 'prismjs/plugins/line-highlight/prism-line-highlight.css';
+
 class PrismCode extends HTMLElement {
-  // Watch for changes to the "code" and "language" attributes.
+  // Watch for changes to the "code", "language", and "highlight" attributes.
   static get observedAttributes() {
-    return ['code', 'language'];
+    return ['code', 'language', 'highlight'];
   }
 
   constructor() {
@@ -29,12 +33,19 @@ class PrismCode extends HTMLElement {
     // Clear any existing content.
     this.replaceChildren();
 
-    // Retrieve the attributes, falling back to default code if not provided.
+    // Retrieve attributes, falling back to default values if not provided.
     const code = this.getAttribute('code') || 'console.log("Hello, world!");';
     const language = this.getAttribute('language') || 'javascript';
+    const highlight = this.getAttribute('highlight'); // new attribute for line highlighting
 
     // Create a <pre> element and a <code> element.
     const pre = document.createElement('pre');
+    
+    // If the highlight attribute is provided, set the data-line attribute.
+    if (highlight) {
+      pre.setAttribute('data-line', highlight);
+    }
+
     const codeElement = document.createElement('code');
     codeElement.className = `language-${language}`;
     

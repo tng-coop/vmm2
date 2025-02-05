@@ -18,7 +18,7 @@ export class ReactProgrammingDemo extends LitElement {
 
     // Create a container element (optional, for styling or structure)
     const container = document.createElement('div');
-    container.className = 'prism-code-wrapper';
+    container.className = 'reactprogramming-demo';
 
     // Create the inner <prism-code> element
     const prismCodeElement = document.createElement('prism-code');
@@ -37,6 +37,7 @@ export default HelloWorld;
     `;
         prismCodeElement.setAttribute('code', code.trim());
         prismCodeElement.setAttribute('language', 'javascript');
+        prismCodeElement.setAttribute('highlight', '7');
 
     // Append the inner component to the container, then append the container to this element.
     container.appendChild(prismCodeElement);
