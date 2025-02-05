@@ -169,6 +169,17 @@ export default App;
         font-size: 16px;
         margin-top: 10px;
       }
+      /* Bubble hint styling: now in document flow, below the input */
+      .bubble-hint {
+        background: #fffae6;
+        border: 1px solid #f0c36d;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 14px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        display: none;
+        margin-top: 10px;
+      }
     `;
     container.appendChild(style);
 
@@ -213,7 +224,7 @@ export default App;
     codeBoxes.appendChild(definitionBox);
     leftCodeContainer.appendChild(codeBoxes);
 
-    // Navigation buttons (only "Previous" and "Next" remain).
+    // Navigation buttons container: "Previous", "Next", and "Reset"
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
 
@@ -225,8 +236,14 @@ export default App;
     nextButton.setAttribute('variant', 'primary');
     nextButton.textContent = 'Next';
 
+    // NEW: Reset button to start over.
+    const resetButton = document.createElement('sl-button');
+    resetButton.setAttribute('variant', 'primary');
+    resetButton.textContent = 'Reset';
+
     buttonContainer.appendChild(prevButton);
     buttonContainer.appendChild(nextButton);
+    buttonContainer.appendChild(resetButton);
     leftCodeContainer.appendChild(buttonContainer);
 
     // ---------------------------
@@ -247,16 +264,19 @@ export default App;
     demoTop.appendChild(demoHeading);
     demoTop.appendChild(demoInput);
 
+    // NEW: Bubble hint element, appended right after the simulated inbox.
+    const bubbleHint = document.createElement('div');
+    bubbleHint.className = 'bubble-hint';
+    bubbleHint.textContent = 'Type something in the inbox above!';
+    demoTop.appendChild(bubbleHint);
+
     // Bottom half: displays debug/inner state message.
     const demoBottom = document.createElement('div');
     demoBottom.className = 'demo-bottom';
-    // In parent's mode, the demo is normally shown only for the final group.
-    // But once browserEnabled is true, it stays visible.
     demoBottom.textContent = 'Inner state: ' + demoGreeting;
 
     demoArea.appendChild(demoTop);
     demoArea.appendChild(demoBottom);
-
     // Append left (code) and middle (demo) columns to the main container.
     container.appendChild(leftCodeContainer);
     container.appendChild(demoArea);
@@ -271,9 +291,10 @@ export default App;
         parentPrism.setAttribute('highlight', `${start}-${end}`);
         definitionPrism.setAttribute('highlight', '');
         prevButton.disabled = (this.parentGroupIndex === 0);
-        // Disable the Next button if we are at the final parent's group.
-        nextButton.disabled = (this.parentGroupIndex === this.parentGroups.length - 1);
-        // Show the live demo if either we're in parent's final group or the browser has been enabled.
+        // Always keep the Next button enabled.
+        nextButton.disabled = false;
+        
+        // Show the live demo if browser is enabled or we are at the final parent's group.
         if (this.browserEnabled || this.parentGroupIndex === this.parentGroups.length - 1) {
           demoTop.style.display = 'block';
           demoBottom.style.display = 'block';
@@ -282,13 +303,22 @@ export default App;
           demoTop.style.display = 'none';
           demoBottom.style.display = 'none';
         }
+        
+        // Instead of disabling Next, show a bubble hint below the inbox if at final group and user hasn't typed.
+        if (this.parentGroupIndex === this.parentGroups.length - 1 && !this.browserEnabled) {
+          bubbleHint.style.display = 'block';
+          bubbleHint.textContent = 'Type something in the inbox above!';
+        } else {
+          bubbleHint.style.display = 'none';
+        }
       } else { // activeBox === 'definition'
         const [start, end] = this.definitionGroups[this.definitionGroupIndex];
         definitionPrism.setAttribute('highlight', `${start}-${end}`);
         parentPrism.setAttribute('highlight', '');
         prevButton.disabled = false;
         nextButton.disabled = false;
-        // If browserEnabled is true, show the live demo even in definition mode.
+        // Always hide the bubble hint in definition mode.
+        bubbleHint.style.display = 'none';
         if (this.browserEnabled) {
           demoTop.style.display = 'block';
           demoBottom.style.display = 'block';
@@ -318,6 +348,9 @@ export default App;
           // When finishing group 2 ("import App from './App';"), switch to definition mode.
           this.activeBox = 'definition';
           this.definitionGroupIndex = 0;
+        } else if (this.parentGroupIndex === this.parentGroups.length - 1) {
+          // If already at the final parent's group, do nothing
+          // (the bubble hint invites the user to type in the inbox).
         }
       } else { // activeBox === 'definition'
         if (this.definitionGroupIndex < this.definitionGroups.length - 1) {
@@ -357,6 +390,22 @@ export default App;
     });
 
     // ---------------------------
+    // Reset Button: Restore the initial state.
+    // ---------------------------
+    resetButton.addEventListener('click', () => {
+      // Reset all demo state variables.
+      this.activeBox = 'parent';
+      this.parentGroupIndex = 0;
+      this.definitionGroupIndex = 0;
+      this.browserEnabled = false;
+      demoGreeting = 'Hello Function Component!';
+      demoInput.value = demoGreeting;
+      demoHeading.textContent = demoGreeting;
+      demoBottom.textContent = 'Inner state: ' + demoGreeting;
+      updateHighlight();
+    });
+
+    // ---------------------------
     // Live Demo: Update inner state as user types.
     // ---------------------------
     demoInput.addEventListener('input', (event) => {
@@ -378,7 +427,7 @@ export default App;
       definitionPrism.setAttribute('highlight', '3-17');
       Prism.highlightElement(definitionPrism.querySelector('code'));
       demoBottom.textContent = "Component definition complete. State: 'greeting' = '" + demoGreeting + "'.";
-      // Blink for 100ms, then remove any highlighting.
+      // Blink for 500ms, then remove any highlighting.
       setTimeout(() => {
         definitionPrism.setAttribute('highlight', '');
         Prism.highlightElement(definitionPrism.querySelector('code'));
