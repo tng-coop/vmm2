@@ -58,6 +58,26 @@ export class ReactProgrammingDemo extends LitElement {
     this.replaceChildren();
 
     // ---------------------------
+    // Helper: Highlight the term "greeting" within a given element.
+    // This function walks through text nodes and wraps the term in a span.
+    // (Note: This is a simple approach and may need to be refined for complex markup.)
+    function highlightTerm(element, term) {
+      const walk = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+      const textNodes = [];
+      while (walk.nextNode()) {
+        textNodes.push(walk.currentNode);
+      }
+      textNodes.forEach(node => {
+        const regex = new RegExp(`\\b(${term})\\b`, 'gi');
+        if (regex.test(node.nodeValue)) {
+          const span = document.createElement('span');
+          span.innerHTML = node.nodeValue.replace(regex, '<span class="highlight-term">$1</span>');
+          node.parentNode.replaceChild(span, node);
+        }
+      });
+    }
+
+    // ---------------------------
     // Define our code samples.
     // ---------------------------
     const parentCode = `
@@ -180,6 +200,11 @@ export default ParentComponent;
         display: none;
         margin-top: 10px;
       }
+      /* New CSS for highlighting the term "greeting" */
+      .highlight-term {
+        background-color: yellow;
+        font-weight: bold;
+      }
     `;
     container.appendChild(style);
 
@@ -286,6 +311,15 @@ export default ParentComponent;
     container.appendChild(leftCodeContainer);
     container.appendChild(demoArea);
     this.appendChild(container);
+
+    // Once the demo is rendered, call Prism to highlight the code
+    // then run our helper to wrap "greeting" with a highlight.
+    const parentCodeEl = parentPrism.querySelector('code');
+    const definitionCodeEl = definitionPrism.querySelector('code');
+    Prism.highlightElement(parentCodeEl);
+    Prism.highlightElement(definitionCodeEl);
+    highlightTerm(parentCodeEl, 'greeting');
+    highlightTerm(definitionCodeEl, 'greeting');
 
     // ---------------------------
     // Navigation Update Function
@@ -419,14 +453,17 @@ export default ParentComponent;
       }
       
       // In definition mode, temporarily blink a highlight on the definition block.
-      const originalHighlight = definitionPrism.getAttribute('highlight') || '';
-      // Blink the main block (lines 3-29: Greeting, CharCount, ParentComponent)
+      // Set the highlight to cover the main block (e.g., lines 3-29: Greeting, CharCount, ParentComponent)
       definitionPrism.setAttribute('highlight', '3-29');
       Prism.highlightElement(definitionPrism.querySelector('code'));
+      // Reapply our custom highlight for "greeting"
+      highlightTerm(definitionPrism.querySelector('code'), 'greeting');
       demoBottom.textContent = "Component definition complete. State: 'greeting' = '" + demoGreeting + "'.";
+      // Blink for 500ms, then remove any temporary highlighting.
       setTimeout(() => {
         definitionPrism.setAttribute('highlight', '');
         Prism.highlightElement(definitionPrism.querySelector('code'));
+        highlightTerm(definitionPrism.querySelector('code'), 'greeting');
       }, 500);
     });
   }
