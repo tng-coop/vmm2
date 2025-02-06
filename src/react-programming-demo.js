@@ -10,47 +10,34 @@ export class ReactProgrammingDemo extends LitElement {
   constructor() {
     super();
     // --- Parent (caller) code groups (absolute line numbers, including empty lines):
-    // Suppose the parent's file looks like this:
+    // Updated parent's file:
     // Line 1: import React from 'react';
     // Line 2: import ReactDOM from 'react-dom';
-    // Line 3: import App from './App';
+    // Line 3: import ParentComponent from './ParentComponent';
     // Line 4: (empty)
     // Lines 5–10: ReactDOM.render( ... );
-    // We will navigate only groups 0–2 (the first three lines) before switching to definition.
     this.parentGroups = [
       [1, 1],   // Group 0: line 1
       [2, 2],   // Group 1: line 2
-      [3, 3],   // Group 2: line 3
-      [5, 10]   // Group 3: the render call (displayed after the component definition is complete)
+      [3, 3],   // Group 2: line 3 (now importing ParentComponent)
+      [5, 10]   // Group 3: the render call
     ];
 
     // --- Component Definition code groups (absolute line numbers, counting empty lines):
-    // The component definition file (18 lines total) is assumed to be:
-    // Line 1: import React, { useState } from 'react';
-    // Line 2: (empty)
-    // Line 3: const App = () => {
-    // Line 4:   const [greeting, setGreeting] = useState('Hello Function Component!');
-    // Line 5: (empty)
-    // Line 6:   return (
-    // Line 7:     <div>
-    // Line 8:       <h1>{greeting}</h1>
-    // Line 9:       <input 
-    // Line 10:         type="text"
-    // Line 11:         value={greeting}
-    // Line 12:         onChange={(event) => setGreeting(event.target.value)}
-    // Line 13:       />
-    // Line 14:     </div>
-    // Line 15:   );
-    // Line 16: };
-    // Line 17: (empty)
-    // Line 18: export default App;
-    //
-    // We define two groups:
-    // Group 0: [1,17] → the entire definition except the final export line (incomplete definition)
-    // Group 1: [18,18] → the export statement (definition complete)
+    // Updated component definition file (31 lines total):
+    // Lines:
+    //   1: import React, { useState } from 'react';
+    //   2: (empty)
+    //   3–14: Definition of Greeting component
+    //   15: (empty)
+    //   16–18: Definition of CharCount component
+    //   19: (empty)
+    //   20–29: Definition of ParentComponent component
+    //   30: (empty)
+    //   31: export default ParentComponent;
     this.definitionGroups = [
-      [1, 17],
-      [18, 18],
+      [1, 30],
+      [31, 31],
     ];
 
     // Start with parent's (caller) code active.
@@ -76,11 +63,11 @@ export class ReactProgrammingDemo extends LitElement {
     const parentCode = `
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
+import ParentComponent from './ParentComponent';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <ParentComponent />
   </React.StrictMode>,
   document.getElementById('root')
 );
@@ -89,9 +76,7 @@ ReactDOM.render(
     const componentDefinitionCode = `
 import React, { useState } from 'react';
 
-const App = () => {
-  const [greeting, setGreeting] = useState('Hello Function Component!');
-  
+const Greeting = ({ greeting, setGreeting }) => {
   return (
     <div>
       <h1>{greeting}</h1>
@@ -104,7 +89,22 @@ const App = () => {
   );
 };
 
-export default App;
+const CharCount = ({ greeting }) => {
+  return <p>Character Count: {greeting.length}</p>;
+};
+
+const ParentComponent = () => {
+  const [greeting, setGreeting] = useState('Hello Function Component!');
+  
+  return (
+    <div>
+      <Greeting greeting={greeting} setGreeting={setGreeting} />
+      <CharCount greeting={greeting} />
+    </div>
+  );
+};
+
+export default ParentComponent;
     `.trim();
 
     // ---------------------------
@@ -264,6 +264,11 @@ export default App;
     demoTop.appendChild(demoHeading);
     demoTop.appendChild(demoInput);
 
+    // NEW: Display character count (simulating the CharCount component)
+    const demoCharCount = document.createElement('p');
+    demoCharCount.textContent = 'Character Count: ' + demoGreeting.length;
+    demoTop.appendChild(demoCharCount);
+
     // NEW: Bubble hint element, appended right after the simulated inbox.
     const bubbleHint = document.createElement('div');
     bubbleHint.className = 'bubble-hint';
@@ -291,10 +296,8 @@ export default App;
         parentPrism.setAttribute('highlight', `${start}-${end}`);
         definitionPrism.setAttribute('highlight', '');
         prevButton.disabled = (this.parentGroupIndex === 0);
-        // Always keep the Next button enabled.
         nextButton.disabled = false;
         
-        // Show the live demo if browser is enabled or we are at the final parent's group.
         if (this.browserEnabled || this.parentGroupIndex === this.parentGroups.length - 1) {
           demoTop.style.display = 'block';
           demoBottom.style.display = 'block';
@@ -304,7 +307,6 @@ export default App;
           demoBottom.style.display = 'none';
         }
         
-        // Instead of disabling Next, show a bubble hint below the inbox if at final group and user hasn't typed.
         if (this.parentGroupIndex === this.parentGroups.length - 1 && !this.browserEnabled) {
           bubbleHint.style.display = 'block';
           bubbleHint.textContent = 'Type something in the inbox above!';
@@ -317,7 +319,6 @@ export default App;
         parentPrism.setAttribute('highlight', '');
         prevButton.disabled = false;
         nextButton.disabled = false;
-        // Always hide the bubble hint in definition mode.
         bubbleHint.style.display = 'none';
         if (this.browserEnabled) {
           demoTop.style.display = 'block';
@@ -341,25 +342,22 @@ export default App;
     // ---------------------------
     nextButton.addEventListener('click', () => {
       if (this.activeBox === 'parent') {
-        // In parent's mode, only groups 0,1,2 are normally shown.
-        if (this.parentGroupIndex < this.parentGroups.length - 2) { // i.e. if index < 2
+        if (this.parentGroupIndex < this.parentGroups.length - 2) {
           this.parentGroupIndex++;
         } else if (this.parentGroupIndex === this.parentGroups.length - 2) {
-          // When finishing group 2 ("import App from './App';"), switch to definition mode.
+          // Switch to definition mode after group 2
           this.activeBox = 'definition';
           this.definitionGroupIndex = 0;
         } else if (this.parentGroupIndex === this.parentGroups.length - 1) {
-          // If already at the final parent's group, do nothing
-          // (the bubble hint invites the user to type in the inbox).
+          // Do nothing if already at the final parent's group
         }
       } else { // activeBox === 'definition'
         if (this.definitionGroupIndex < this.definitionGroups.length - 1) {
           this.definitionGroupIndex++;
         } else {
-          // When at the final group of definition ("export default App;"),
-          // pressing Next goes back to the parent's final group (the render call).
+          // When at the final group of definition, go back to parent's final group.
           this.activeBox = 'parent';
-          this.parentGroupIndex = this.parentGroups.length - 1; // group 3
+          this.parentGroupIndex = this.parentGroups.length - 1;
         }
       }
       updateHighlight();
@@ -373,15 +371,13 @@ export default App;
         if (this.definitionGroupIndex > 0) {
           this.definitionGroupIndex--;
         } else {
-          // At the beginning of definition mode; go back to parent's group 2.
           this.activeBox = 'parent';
-          this.parentGroupIndex = this.parentGroups.length - 2; // group 2
+          this.parentGroupIndex = this.parentGroups.length - 2;
         }
       } else { // activeBox === 'parent'
         if (this.parentGroupIndex === this.parentGroups.length - 1) {
-          // If we're at the final parent's group (render call), go back to definition mode.
           this.activeBox = 'definition';
-          this.definitionGroupIndex = this.definitionGroups.length - 1; // final definition group
+          this.definitionGroupIndex = this.definitionGroups.length - 1;
         } else if (this.parentGroupIndex > 0) {
           this.parentGroupIndex--;
         }
@@ -393,7 +389,6 @@ export default App;
     // Reset Button: Restore the initial state.
     // ---------------------------
     resetButton.addEventListener('click', () => {
-      // Reset all demo state variables.
       this.activeBox = 'parent';
       this.parentGroupIndex = 0;
       this.definitionGroupIndex = 0;
@@ -401,6 +396,7 @@ export default App;
       demoGreeting = 'Hello Function Component!';
       demoInput.value = demoGreeting;
       demoHeading.textContent = demoGreeting;
+      demoCharCount.textContent = 'Character Count: ' + demoGreeting.length;
       demoBottom.textContent = 'Inner state: ' + demoGreeting;
       updateHighlight();
     });
@@ -411,11 +407,12 @@ export default App;
     demoInput.addEventListener('input', (event) => {
       demoGreeting = event.target.value;
       demoHeading.textContent = demoGreeting;
+      demoCharCount.textContent = 'Character Count: ' + demoGreeting.length;
       
       // When the user types, automatically switch to definition mode if not already there.
       if (this.activeBox !== 'definition') {
         this.activeBox = 'definition';
-        this.definitionGroupIndex = this.definitionGroups.length - 1; // final definition group
+        this.definitionGroupIndex = this.definitionGroups.length - 1;
         // Enable the web browser permanently.
         this.browserEnabled = true;
         updateHighlight();
@@ -423,11 +420,10 @@ export default App;
       
       // In definition mode, temporarily blink a highlight on the definition block.
       const originalHighlight = definitionPrism.getAttribute('highlight') || '';
-      // Temporarily set the highlight to cover the main block (e.g., lines 3-17)
-      definitionPrism.setAttribute('highlight', '3-17');
+      // Blink the main block (lines 3-29: Greeting, CharCount, ParentComponent)
+      definitionPrism.setAttribute('highlight', '3-29');
       Prism.highlightElement(definitionPrism.querySelector('code'));
       demoBottom.textContent = "Component definition complete. State: 'greeting' = '" + demoGreeting + "'.";
-      // Blink for 500ms, then remove any highlighting.
       setTimeout(() => {
         definitionPrism.setAttribute('highlight', '');
         Prism.highlightElement(definitionPrism.querySelector('code'));
