@@ -180,6 +180,15 @@ export default ParentComponent;
         display: none;
         margin-top: 10px;
       }
+      /* NEW: Explanation area styling */
+      .explanation-area {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #333;
+        padding: 10px;
+        background: #f7f7f7;
+        border: 1px solid #ddd;
+      }
     `;
     container.appendChild(style);
 
@@ -245,6 +254,12 @@ export default ParentComponent;
     buttonContainer.appendChild(nextButton);
     buttonContainer.appendChild(resetButton);
     leftCodeContainer.appendChild(buttonContainer);
+
+    // NEW: Explanation area describing what each step does.
+    const explanationArea = document.createElement('div');
+    explanationArea.className = 'explanation-area';
+    explanationArea.textContent = 'Step Explanation: ...';
+    leftCodeContainer.appendChild(explanationArea);
 
     // ---------------------------
     // MIDDLE COLUMN: Live Demo Area (split vertically)
@@ -329,6 +344,44 @@ export default ParentComponent;
           demoBottom.style.display = 'none';
         }
       }
+      
+      // ---------------------------
+      // NEW: Update the Explanation Area
+      // ---------------------------
+      let explanation = '';
+      if (this.activeBox === 'parent') {
+        switch (this.parentGroupIndex) {
+          case 0:
+            explanation = "Step 1: Import React. This line imports the React library required to build the UI components.";
+            break;
+          case 1:
+            explanation = "Step 2: Import ReactDOM. This line brings in ReactDOM so that React components can be rendered in the browser.";
+            break;
+          case 2:
+            explanation = "Step 3: Import ParentComponent. This line imports your main component, allowing it to be used in the render call.";
+            break;
+          case 3:
+            explanation = "Step 4: Render the ParentComponent. This statement mounts your React application into the DOM and starts the app.";
+            break;
+          default:
+            explanation = "";
+            break;
+        }
+      } else { // activeBox === 'definition'
+        switch (this.definitionGroupIndex) {
+          case 0:
+            explanation = "Step 5: Define the Component. This section contains the definitions for Greeting, CharCount, and ParentComponent, including state management.";
+            break;
+          case 1:
+            explanation = "Step 6: Export the Component. This final line exports ParentComponent as the default export, making it available for use elsewhere.";
+            break;
+          default:
+            explanation = "";
+            break;
+        }
+      }
+      explanationArea.textContent = explanation;
+
       console.log("Active Box:", this.activeBox, 
                   "Parent Group Index:", this.parentGroupIndex, 
                   "Definition Group Index:", this.definitionGroupIndex,
