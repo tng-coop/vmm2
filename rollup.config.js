@@ -12,7 +12,6 @@ export default {
   },
   plugins: [
     resolve(),           // so Rollup can locate npm modules
-    commonjs(),          // converts CommonJS modules to ES6 (optional)
     postcss({
       extract: true,     // extracts CSS into a separate file (default: same base name as JS file, e.g., bundle.css)
       minimize: true,    // minify the CSS
