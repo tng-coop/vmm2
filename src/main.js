@@ -15,7 +15,10 @@ import './triangle-group-demo.js';
 class MyApp extends HTMLElement {
   constructor() {
     super();
-    // Initialize state
+    // Attach a shadow root to encapsulate styles and markup.
+    this.attachShadow({ mode: 'open' });
+
+    // Initialize state.
     this.activeView = '';
 
     // Array of Bible verses for the footer.
@@ -85,10 +88,8 @@ class MyApp extends HTMLElement {
   createNav() {
     const nav = document.createElement('nav');
     nav.className = 'menu';
-
     // Create the Group Demos dropdown.
     nav.appendChild(this.createGroupDropdown());
-
     return nav;
   }
 
@@ -159,15 +160,15 @@ class MyApp extends HTMLElement {
 
   // Render the full component.
   render() {
-    // Clear existing content.
-    this.replaceChildren();
+    // Clear existing content in the shadow root.
+    this.shadowRoot.replaceChildren();
 
-    // Append all parts.
-    this.appendChild(this.createStyles());
-    this.appendChild(this.createHeader());
-    this.appendChild(this.createNav());
-    this.appendChild(this.createMain());
-    this.appendChild(this.createFooter());
+    // Append all parts to the shadow DOM.
+    this.shadowRoot.appendChild(this.createStyles());
+    this.shadowRoot.appendChild(this.createHeader());
+    this.shadowRoot.appendChild(this.createNav());
+    this.shadowRoot.appendChild(this.createMain());
+    this.shadowRoot.appendChild(this.createFooter());
   }
 }
 
