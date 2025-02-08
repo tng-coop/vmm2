@@ -11,8 +11,6 @@ import '@shoelace-style/shoelace/dist/components/menu-item/menu-item.js';
 import './z-group-demo.js';
 import './even-group-demo.js';
 import './triangle-group-demo.js';
-import './prism-code-wrapper.js';
-import './react-programming-demo.js';
 
 class MyApp extends HTMLElement {
   constructor() {
@@ -91,13 +89,6 @@ class MyApp extends HTMLElement {
     // Create the Group Demos dropdown.
     nav.appendChild(this.createGroupDropdown());
 
-    // Create the Web Programming button.
-    const webButton = document.createElement('sl-button');
-    webButton.setAttribute('variant', 'primary');
-    webButton.textContent = "Web Programming";
-    webButton.addEventListener('click', () => this.handleMenuClick('webprogramming'));
-    nav.appendChild(webButton);
-
     return nav;
   }
 
@@ -146,9 +137,6 @@ class MyApp extends HTMLElement {
         break;
       case 'other':
         contentElement = document.createElement('triangle-group-demo');
-        break;
-      case 'webprogramming':
-        contentElement = document.createElement('react-programming-demo');
         break;
       default:
         contentElement = document.createElement('p');
