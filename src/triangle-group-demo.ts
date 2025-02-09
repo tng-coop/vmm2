@@ -1,7 +1,16 @@
-import { LitElement, html, css, render } from 'lit';
+import { LitElement, html, css, render, TemplateResult } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+
+// Define a union type for the D₃ elements.
+export type D3Element = "1" | "r" | "r2" | "f" | "rf" | "r2f";
+
+interface D3Obj {
+  k: number;
+  d: number;
+}
 
 // --- Helper functions for D₃ ---
-const elementToObj = {
+const elementToObj: Record<D3Element, D3Obj> = {
   "1":   { k: 0, d: 0 },
   "r":   { k: 1, d: 0 },
   "r2":  { k: 2, d: 0 },
@@ -10,27 +19,28 @@ const elementToObj = {
   "r2f": { k: 2, d: 1 }
 };
 
-function composeD3(a, b) {
+export function composeD3(a: D3Element, b: D3Element): D3Element {
   const A = elementToObj[a];
   const B = elementToObj[b];
   let k = A.k + (A.d === 0 ? B.k : -B.k);
   k = ((k % 3) + 3) % 3;
   const d = (A.d + B.d) % 2;
-  for (let key in elementToObj) {
-    const val = elementToObj[key];
+  // Iterate over the entries (with an appropriate cast) to find the matching element.
+  for (const [key, val] of Object.entries(elementToObj) as [D3Element, D3Obj][]) {
     if (val.k === k && val.d === d) return key;
   }
-  return null;
+  // Should never happen for D₃.
+  throw new Error(`composeD3: No matching element for k=${k}, d=${d}`);
 }
 
-function inverseD3(a) {
-  for (let candidate in elementToObj) {
-    if (composeD3(a, candidate) === "1") return candidate;
+export function inverseD3(a: D3Element): D3Element {
+  for (const candidate in elementToObj) {
+    if (composeD3(a, candidate as D3Element) === "1") return candidate as D3Element;
   }
-  return null;
+  throw new Error(`inverseD3: No inverse found for element ${a}`);
 }
 
-function displayD3(elem) {
+export function displayD3(elem: D3Element): TemplateResult {
   switch (elem) {
     case "1":
       return html`1`;
@@ -49,7 +59,7 @@ function displayD3(elem) {
   }
 }
 
-const vertexMapping = {
+const vertexMapping: Record<D3Element, { top: string; right: string; left: string }> = {
   "1":   { top: "1", right: "2", left: "3" },
   "r":   { top: "3", right: "1", left: "2" },
   "r2":  { top: "2", right: "3", left: "1" },
@@ -59,13 +69,8 @@ const vertexMapping = {
 };
 
 // --- TriangleGroupDemo Component ---
-class TriangleGroupDemo extends LitElement {
-  static properties = {
-    currentElement: { type: String },
-    animating: { type: Boolean },
-    formula: { type: Object }
-  };
-
+@customElement('triangle-group-demo')
+export class TriangleGroupDemo extends LitElement {
   static styles = css`
     :host {
       display: block;
@@ -173,18 +178,20 @@ class TriangleGroupDemo extends LitElement {
     }
   `;
 
-  constructor() {
-    super();
-    this.currentElement = "1";
-    this.animating = false;
-    this.formula = html`
+  @property({ type: String })
+  currentElement: D3Element = "1";
+
+  @property({ type: Boolean })
+  animating: boolean = false;
+
+  @property({ type: Object })
+  formula: TemplateResult = html`
       Result: <span class="left-highlight">${displayD3("1")}</span> &middot; 
       <span class="right-highlight">${displayD3("1")}</span> = 
       <span class="product-highlight">${displayD3("1")}</span>
-    `;
-  }
+  `;
 
-  clearTableHighlights() {
+  clearTableHighlights(): void {
     const allCells = this.renderRoot.querySelectorAll(
       '#multiplication-table td, #multiplication-table th'
     );
@@ -193,7 +200,7 @@ class TriangleGroupDemo extends LitElement {
     });
   }
 
-  resetDemo() {
+  resetDemo(): void {
     if (this.currentElement !== "1") {
       this.currentElement = "1";
     }
@@ -211,7 +218,7 @@ class TriangleGroupDemo extends LitElement {
     }
   }
 
-  updateFormulaDisplay(factorLeft, factorRight, product) {
+  updateFormulaDisplay(factorLeft: D3Element, factorRight: D3Element, product: D3Element): void {
     this.formula = html`
       Result: <span class="left-highlight">${displayD3(factorLeft)}</span> &middot; 
       <span class="right-highlight">${displayD3(factorRight)}</span> = 
@@ -219,14 +226,23 @@ class TriangleGroupDemo extends LitElement {
     `;
   }
 
-  updateVertices() {
+  updateVertices(): void {
     const mapping = vertexMapping[this.currentElement];
-    this.renderRoot.querySelector('#vertex-top').textContent = mapping.top;
-    this.renderRoot.querySelector('#vertex-right').textContent = mapping.right;
-    this.renderRoot.querySelector('#vertex-left').textContent = mapping.left;
+    const vertexTop = this.renderRoot.querySelector('#vertex-top');
+    const vertexRight = this.renderRoot.querySelector('#vertex-right');
+    const vertexLeft = this.renderRoot.querySelector('#vertex-left');
+    if (vertexTop) {
+      vertexTop.textContent = mapping.top;
+    }
+    if (vertexRight) {
+      vertexRight.textContent = mapping.right;
+    }
+    if (vertexLeft) {
+      vertexLeft.textContent = mapping.left;
+    }
   }
 
-  highlightMultiplicationCell(left, right) {
+  highlightMultiplicationCell(left: D3Element, right: D3Element): void {
     this.clearTableHighlights();
     const rowCells = this.renderRoot.querySelectorAll(
       `#multiplication-table [data-left="${left}"]`
@@ -246,37 +262,39 @@ class TriangleGroupDemo extends LitElement {
   }
 
   // --- Transformation Handlers using async/await ---
-
-  async handleIdentityClick() {
+  async handleIdentityClick(): Promise<void> {
     if (this.animating) return;
     this.animating = true;
-    const trans = '1';
+    const trans: D3Element = "1";
     const oldElem = this.currentElement;
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
     this.updateFormulaDisplay(trans, oldElem, newElem);
     const group = this.renderRoot.querySelector("#triangle-group");
-    const anim = group.animate(
-      [
-        { transform: "scale(1)" },
-        { transform: "scale(1.2)" },
-        { transform: "scale(1)" }
-      ],
-      { duration: 300, easing: "ease-out", fill: "forwards" }
-    );
-    await anim.finished;
-    anim.cancel();
-    group.setAttribute("transform", "");
+    if (group) {
+      const anim = group.animate(
+        [
+          { transform: "scale(1)" },
+          { transform: "scale(1.2)" },
+          { transform: "scale(1)" }
+        ],
+        { duration: 300, easing: "ease-out", fill: "forwards" }
+      );
+      await anim.finished;
+      anim.cancel();
+      group.setAttribute("transform", "");
+    }
     this.currentElement = newElem;
     this.updateVertices();
     this.animating = false;
   }
 
-  async animateRotation(targetAngle, duration, newElem) {
+  async animateRotation(targetAngle: number, duration: number, newElem: D3Element): Promise<void> {
     const group = this.renderRoot.querySelector("#triangle-group");
+    if (!group) return;
     const startTime = performance.now();
-    await new Promise(resolve => {
-      const animateStep = (now) => {
+    await new Promise<void>(resolve => {
+      const animateStep = (now: number) => {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
         group.setAttribute("transform", `rotate(${targetAngle * progress})`);
@@ -294,10 +312,10 @@ class TriangleGroupDemo extends LitElement {
     this.animating = false;
   }
 
-  async handleRotate120Click() {
+  async handleRotate120Click(): Promise<void> {
     if (this.animating) return;
     this.animating = true;
-    const trans = 'r';
+    const trans: D3Element = "r";
     const oldElem = this.currentElement;
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
@@ -305,10 +323,10 @@ class TriangleGroupDemo extends LitElement {
     await this.animateRotation(120, 500, newElem);
   }
 
-  async handleRotate240Click() {
+  async handleRotate240Click(): Promise<void> {
     if (this.animating) return;
     this.animating = true;
-    const trans = 'r2';
+    const trans: D3Element = "r2";
     const oldElem = this.currentElement;
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
@@ -316,11 +334,12 @@ class TriangleGroupDemo extends LitElement {
     await this.animateRotation(240, 1000, newElem);
   }
 
-  async animateReflection(duration, newElem) {
+  async animateReflection(duration: number, newElem: D3Element): Promise<void> {
     const group = this.renderRoot.querySelector("#triangle-group");
+    if (!group) return;
     const startTime = performance.now();
-    await new Promise(resolve => {
-      const animateStep = (now) => {
+    await new Promise<void>(resolve => {
+      const animateStep = (now: number) => {
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
         const currentScale = 1 - 2 * progress;
@@ -339,10 +358,10 @@ class TriangleGroupDemo extends LitElement {
     this.animating = false;
   }
 
-  async handleReflectClick() {
+  async handleReflectClick(): Promise<void> {
     if (this.animating) return;
     this.animating = true;
-    const trans = 'f';
+    const trans: D3Element = "f";
     const oldElem = this.currentElement;
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
@@ -350,12 +369,13 @@ class TriangleGroupDemo extends LitElement {
     await this.animateReflection(500, newElem);
   }
 
-  async animateFlipThenRotation(targetAngle, flipDuration, rotationDuration, newElem) {
+  async animateFlipThenRotation(targetAngle: number, flipDuration: number, rotationDuration: number, newElem: D3Element): Promise<void> {
     const group = this.renderRoot.querySelector("#triangle-group");
+    if (!group) return;
     // Flip phase
     const flipStartTime = performance.now();
-    await new Promise(resolve => {
-      const animateFlip = (now) => {
+    await new Promise<void>(resolve => {
+      const animateFlip = (now: number) => {
         const elapsed = now - flipStartTime;
         const progress = Math.min(elapsed / flipDuration, 1);
         const currentScale = 1 - 2 * progress;
@@ -370,8 +390,8 @@ class TriangleGroupDemo extends LitElement {
     });
     // Rotation phase (with reflection in place)
     const rotationStartTime = performance.now();
-    await new Promise(resolve => {
-      const animateRotationPhase = (now2) => {
+    await new Promise<void>(resolve => {
+      const animateRotationPhase = (now2: number) => {
         const elapsed2 = now2 - rotationStartTime;
         const progress2 = Math.min(elapsed2 / rotationDuration, 1);
         group.setAttribute("transform", `rotate(${targetAngle * progress2}) scale(-1,1)`);
@@ -389,10 +409,10 @@ class TriangleGroupDemo extends LitElement {
     this.animating = false;
   }
 
-  async handleRFClick() {
+  async handleRFClick(): Promise<void> {
     if (this.animating) return;
     this.animating = true;
-    const trans = 'rf';
+    const trans: D3Element = "rf";
     const oldElem = this.currentElement;
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
@@ -400,10 +420,10 @@ class TriangleGroupDemo extends LitElement {
     await this.animateFlipThenRotation(120, 500, 500, newElem);
   }
 
-  async handleR2FClick() {
+  async handleR2FClick(): Promise<void> {
     if (this.animating) return;
     this.animating = true;
-    const trans = 'r2f';
+    const trans: D3Element = "r2f";
     const oldElem = this.currentElement;
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
@@ -412,29 +432,38 @@ class TriangleGroupDemo extends LitElement {
   }
 
   // --- Interactive Sections for Group Properties ---
-  handleInteractiveClosure() {
-    const a = this.renderRoot.querySelector('#closure-a').value;
-    const b = this.renderRoot.querySelector('#closure-b').value;
+  handleInteractiveClosure(): void {
+    const closureAElement = this.renderRoot.querySelector('#closure-a') as HTMLSelectElement | null;
+    const closureBElement = this.renderRoot.querySelector('#closure-b') as HTMLSelectElement | null;
+    if (!closureAElement || !closureBElement) return;
+    const a = closureAElement.value as D3Element;
+    const b = closureBElement.value as D3Element;
     const product = composeD3(a, b);
     const closureTemplate = html`
       Result: ${displayD3(a)} &middot; ${displayD3(b)} = ${displayD3(product)}. Closure holds because the result is in D₃.
     `;
-    render(closureTemplate, this.renderRoot.querySelector('#closure-result'));
+    render(closureTemplate, this.renderRoot.querySelector<HTMLDivElement>('#closure-result')!);
   }
 
-  handleInteractiveIdentityProp() {
-    const a = this.renderRoot.querySelector('#identity-element').value;
+  handleInteractiveIdentityProp(): void {
+    const identityElement = this.renderRoot.querySelector('#identity-element') as HTMLSelectElement | null;
+    if (!identityElement) return;
+    const a = identityElement.value as D3Element;
     const product = composeD3("1", a);
     const identityTemplate = html`
       Result: ${displayD3("1")} &middot; ${displayD3(a)} = ${displayD3(product)}. The identity element is 1.
     `;
-    render(identityTemplate, this.renderRoot.querySelector('#identity-result-prop'));
+    render(identityTemplate, this.renderRoot.querySelector<HTMLDivElement>('#identity-result-prop')!);
   }
 
-  handleInteractiveAssociativityProp() {
-    const a = this.renderRoot.querySelector('#assoc-a').value;
-    const b = this.renderRoot.querySelector('#assoc-b').value;
-    const c = this.renderRoot.querySelector('#assoc-c').value;
+  handleInteractiveAssociativityProp(): void {
+    const assocAElement = this.renderRoot.querySelector('#assoc-a') as HTMLSelectElement | null;
+    const assocBElement = this.renderRoot.querySelector('#assoc-b') as HTMLSelectElement | null;
+    const assocCElement = this.renderRoot.querySelector('#assoc-c') as HTMLSelectElement | null;
+    if (!assocAElement || !assocBElement || !assocCElement) return;
+    const a = assocAElement.value as D3Element;
+    const b = assocBElement.value as D3Element;
+    const c = assocCElement.value as D3Element;
     const left = composeD3(composeD3(a, b), c);
     const right = composeD3(a, composeD3(b, c));
     const assocTemplate = html`
@@ -442,20 +471,22 @@ class TriangleGroupDemo extends LitElement {
       and ${displayD3(a)} &middot; ( ${displayD3(b)} &middot; ${displayD3(c)} ) = ${displayD3(right)}.
       ${left === right ? 'Associativity holds.' : 'Associativity fails!'}
     `;
-    render(assocTemplate, this.renderRoot.querySelector('#associativity-result-prop'));
+    render(assocTemplate, this.renderRoot.querySelector<HTMLDivElement>('#associativity-result-prop')!);
   }
 
-  handleInteractiveInverseProp() {
-    const a = this.renderRoot.querySelector('#inverse-element').value;
+  handleInteractiveInverseProp(): void {
+    const inverseElement = this.renderRoot.querySelector('#inverse-element') as HTMLSelectElement | null;
+    if (!inverseElement) return;
+    const a = inverseElement.value as D3Element;
     const inv = inverseD3(a);
     const inverseTemplate = html`
       Result: ${displayD3(a)} &middot; ${displayD3(inv)} = 1. Inverse holds.
     `;
-    render(inverseTemplate, this.renderRoot.querySelector('#inverse-result-prop'));
+    render(inverseTemplate, this.renderRoot.querySelector<HTMLDivElement>('#inverse-result-prop')!);
   }
 
-  render() {
-    const elements = ["1", "r", "r2", "f", "rf", "r2f"];
+  render(): TemplateResult {
+    const elements: D3Element[] = ["1", "r", "r2", "f", "rf", "r2f"];
     return html`
       <h1>Triangle Group Demonstration (Dihedral Group D₃)</h1>
       
@@ -662,5 +693,3 @@ class TriangleGroupDemo extends LitElement {
     `;
   }
 }
-
-customElements.define("triangle-group-demo", TriangleGroupDemo);

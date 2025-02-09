@@ -8,7 +8,7 @@ import '@shoelace-style/shoelace/dist/components/menu-item/menu-item.js';
 // Import the existing custom elements
 import './z-group-demo.js';
 import './even-group-demo.js';
-import './triangle-group-demo.js';
+import './triangle-group-demo.ts';
 
 import { LitElement, html, css } from 'lit';
 
