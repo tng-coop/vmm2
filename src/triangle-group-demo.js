@@ -184,12 +184,6 @@ class TriangleGroupDemo extends LitElement {
     `;
   }
 
-  async firstUpdated() {
-    // Defer calling resetDemo until after the current update cycle
-    await new Promise(resolve => setTimeout(resolve, 0));
-    this.resetDemo();
-  }
-  
   clearTableHighlights() {
     const allCells = this.renderRoot.querySelectorAll(
       '#multiplication-table td, #multiplication-table th'
