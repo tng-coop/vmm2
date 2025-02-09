@@ -5,4 +5,10 @@ export default defineConfig({
   build: {
     sourcemap: true,
   },
+  optimizeDeps: {
+    exclude: [
+      '@shoelace-style/shoelace'
+      // Add other dependencies here if needed.
+    ]
+  },
 });
