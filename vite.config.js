@@ -1,8 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: './', // for a user site, this is correct
+  base: "./", // for a user site, this is correct
   build: {
-    sourcemap: false 
-  }
+    sourcemap: true,
+  },
 });
