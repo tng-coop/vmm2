@@ -19,6 +19,6 @@
     "prismjs": "^1.29.0"
   },
   "devDependencies": {
-    "vite": "^4.0.0"
+    "vite": "^6.1.0"
   }
 }
