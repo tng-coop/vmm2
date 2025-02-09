@@ -1517,7 +1517,7 @@ var eo=Object.defineProperty;var io=(e,t,i)=>t in e?eo(e,t,{enumerable:!0,config
       Result: <span class="left-highlight">${_("1")}</span> &middot; 
       <span class="right-highlight">${_("1")}</span> = 
       <span class="product-highlight">${_("1")}</span>
-    `}async firstUpdated(){await new Promise(t=>setTimeout(t,0)),this.resetDemo()}clearTableHighlights(){this.renderRoot.querySelectorAll("#multiplication-table td, #multiplication-table th").forEach(i=>{i.classList.remove("table-left-highlight","table-right-highlight","table-product-highlight")})}resetDemo(){this.currentElement!=="1"&&(this.currentElement="1"),this.formula=y`
+    `}clearTableHighlights(){this.renderRoot.querySelectorAll("#multiplication-table td, #multiplication-table th").forEach(i=>{i.classList.remove("table-left-highlight","table-right-highlight","table-product-highlight")})}resetDemo(){this.currentElement!=="1"&&(this.currentElement="1"),this.formula=y`
       Result: <span class="left-highlight">${_("1")}</span> &middot; 
       <span class="right-highlight">${_("1")}</span> = 
       <span class="product-highlight">${_("1")}</span>
@@ -1894,4 +1894,4 @@ var eo=Object.defineProperty;var io=(e,t,i)=>t in e?eo(e,t,{enumerable:!0,config
       box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
     }
   `),J(Le,"properties",{activeView:{type:String},randomVerse:{type:String}});customElements.define("my-app",Le);
-//# sourceMappingURL=index-Q3keJME_.js.map
+//# sourceMappingURL=index-3YOHk-bV.js.map
