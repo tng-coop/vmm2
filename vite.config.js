@@ -1,9 +1,8 @@
-// vite.config.js
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  base: '/', // for a user site, this is correct
   build: {
-    // Enable source maps if desired.
     sourcemap: true
   }
 });
