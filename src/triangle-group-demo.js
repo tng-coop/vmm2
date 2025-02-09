@@ -10,10 +10,6 @@ const elementToObj = {
   "r2f": { k: 2, d: 1 }
 };
 
-/**
- * Multiply two elements in D₃.
- * (k₁, d₁)·(k₂, d₂) = (k₁ + (-1)^(d₁)*k₂ mod 3, d₁+d₂ mod 2)
- */
 function composeD3(a, b) {
   const A = elementToObj[a];
   const B = elementToObj[b];
@@ -27,9 +23,6 @@ function composeD3(a, b) {
   return null;
 }
 
-/**
- * Find the inverse of an element in D₃.
- */
 function inverseD3(a) {
   for (let candidate in elementToObj) {
     if (composeD3(a, candidate) === "1") return candidate;
@@ -37,11 +30,6 @@ function inverseD3(a) {
   return null;
 }
 
-/**
- * Convert a D₃ element to a TemplateResult.
- * For example, "r2" returns a template that renders as "r<sup>2</sup>"
- * and "rf" returns "r&middot;f".
- */
 function displayD3(elem) {
   switch (elem) {
     case "1":
@@ -61,9 +49,6 @@ function displayD3(elem) {
   }
 }
 
-/**
- * Mapping from each D₃ element to the numbers assigned to the triangle’s vertices.
- */
 const vertexMapping = {
   "1":   { top: "1", right: "2", left: "3" },
   "r":   { top: "3", right: "1", left: "2" },
@@ -78,7 +63,6 @@ class TriangleGroupDemo extends LitElement {
   static properties = {
     currentElement: { type: String },
     animating: { type: Boolean },
-    // Holds a TemplateResult to display the formula
     formula: { type: Object }
   };
 
@@ -94,7 +78,6 @@ class TriangleGroupDemo extends LitElement {
       text-align: center;
       color: #333;
     }
-    /* Flex container for the triangle and multiplication table */
     .demo-container {
       display: flex;
       align-items: flex-start;
@@ -105,7 +88,6 @@ class TriangleGroupDemo extends LitElement {
     svg {
       overflow: visible;
     }
-    /* Multiplication table styles */
     #multiplication-table {
       font-family: monospace;
       font-size: 16px;
@@ -119,7 +101,6 @@ class TriangleGroupDemo extends LitElement {
       padding: 5px 10px;
       text-align: center;
     }
-    /* Persistent table highlights */
     .table-left-highlight {
       background-color: rgba(255, 200, 200, 0.3);
     }
@@ -129,7 +110,6 @@ class TriangleGroupDemo extends LitElement {
     .table-product-highlight {
       background-color: rgba(200, 255, 200, 0.8);
     }
-    /* Formula display highlight styles */
     #formula-display {
       text-align: center;
       font-size: 24px;
@@ -147,7 +127,6 @@ class TriangleGroupDemo extends LitElement {
       background-color: rgba(200, 255, 200, 0.8);
       padding: 0 4px;
     }
-    /* Buttons and interactive sections */
     .buttons, .interactive {
       text-align: center;
       margin-top: 20px;
@@ -196,18 +175,21 @@ class TriangleGroupDemo extends LitElement {
 
   constructor() {
     super();
-    // Start with the identity element, no animation,
-    // and the formula display showing "1 · 1 = 1".
     this.currentElement = "1";
     this.animating = false;
-    this.formula = html`Result: <span class="left-highlight">${displayD3("1")}</span> &middot; <span class="right-highlight">${displayD3("1")}</span> = <span class="product-highlight">${displayD3("1")}</span>`;
+    this.formula = html`
+      Result: <span class="left-highlight">${displayD3("1")}</span> &middot; 
+      <span class="right-highlight">${displayD3("1")}</span> = 
+      <span class="product-highlight">${displayD3("1")}</span>
+    `;
   }
 
-  firstUpdated() {
+  async firstUpdated() {
+    // Defer calling resetDemo until after the current update cycle
+    await new Promise(resolve => setTimeout(resolve, 0));
     this.resetDemo();
   }
-
-  /** Remove any persistent table highlights */
+  
   clearTableHighlights() {
     const allCells = this.renderRoot.querySelectorAll(
       '#multiplication-table td, #multiplication-table th'
@@ -217,10 +199,15 @@ class TriangleGroupDemo extends LitElement {
     });
   }
 
-  /** Reset the demo to the identity element and set initial highlights. */
   resetDemo() {
-    this.currentElement = "1";
-    this.formula = html`Result: <span class="left-highlight">${displayD3("1")}</span> &middot; <span class="right-highlight">${displayD3("1")}</span> = <span class="product-highlight">${displayD3("1")}</span>`;
+    if (this.currentElement !== "1") {
+      this.currentElement = "1";
+    }
+    this.formula = html`
+      Result: <span class="left-highlight">${displayD3("1")}</span> &middot; 
+      <span class="right-highlight">${displayD3("1")}</span> = 
+      <span class="product-highlight">${displayD3("1")}</span>
+    `;
     this.updateVertices();
     this.clearTableHighlights();
     this.highlightMultiplicationCell("1", "1");
@@ -230,9 +217,6 @@ class TriangleGroupDemo extends LitElement {
     }
   }
 
-  /**
-   * Update the formula display by updating the reactive property `formula`.
-   */
   updateFormulaDisplay(factorLeft, factorRight, product) {
     this.formula = html`
       Result: <span class="left-highlight">${displayD3(factorLeft)}</span> &middot; 
@@ -241,7 +225,6 @@ class TriangleGroupDemo extends LitElement {
     `;
   }
 
-  /** Update the triangle’s vertex labels according to the current element */
   updateVertices() {
     const mapping = vertexMapping[this.currentElement];
     this.renderRoot.querySelector('#vertex-top').textContent = mapping.top;
@@ -249,37 +232,16 @@ class TriangleGroupDemo extends LitElement {
     this.renderRoot.querySelector('#vertex-left').textContent = mapping.left;
   }
 
-  /**
-   * Highlights the multiplication table for the current transformation.
-   * Clears previous highlights, then:
-   * - Adds a "table-left-highlight" class to all cells (and header cells)
-   *   that have data-left equal to the left factor.
-   * - Adds a "table-right-highlight" class to all cells with data-right equal
-   *   to the right factor.
-   * - For the main cell (with matching left and right factors), removes any
-   *   row/column highlights and adds "table-product-highlight".
-   */
   highlightMultiplicationCell(left, right) {
-    // Clear previous table highlights.
     this.clearTableHighlights();
-    
-    // Highlight the entire row (left factor).
     const rowCells = this.renderRoot.querySelectorAll(
       `#multiplication-table [data-left="${left}"]`
     );
-    rowCells.forEach(cell => {
-      cell.classList.add('table-left-highlight');
-    });
-    
-    // Highlight the entire column (right factor).
+    rowCells.forEach(cell => cell.classList.add('table-left-highlight'));
     const colCells = this.renderRoot.querySelectorAll(
       `#multiplication-table [data-right="${right}"]`
     );
-    colCells.forEach(cell => {
-      cell.classList.add('table-right-highlight');
-    });
-    
-    // For the main cell, remove row/column highlights and add product highlight.
+    colCells.forEach(cell => cell.classList.add('table-right-highlight'));
     const mainCell = this.renderRoot.querySelector(
       `#multiplication-table td[data-left="${left}"][data-right="${right}"]`
     );
@@ -289,10 +251,9 @@ class TriangleGroupDemo extends LitElement {
     }
   }
 
-  // --- Transformation Handlers ---
-  // (Each transformation updates the highlights and formula.)
-  
-  handleIdentityClick() {
+  // --- Transformation Handlers using async/await ---
+
+  async handleIdentityClick() {
     if (this.animating) return;
     this.animating = true;
     const trans = '1';
@@ -309,36 +270,37 @@ class TriangleGroupDemo extends LitElement {
       ],
       { duration: 300, easing: "ease-out", fill: "forwards" }
     );
-    anim.finished.then(() => {
-      anim.cancel();
-      group.setAttribute("transform", "");
-      this.currentElement = newElem;
-      this.updateVertices();
-      this.animating = false;
-    });
+    await anim.finished;
+    anim.cancel();
+    group.setAttribute("transform", "");
+    this.currentElement = newElem;
+    this.updateVertices();
+    this.animating = false;
   }
 
-  animateRotation(targetAngle, duration, newElem) {
+  async animateRotation(targetAngle, duration, newElem) {
     const group = this.renderRoot.querySelector("#triangle-group");
     const startTime = performance.now();
-    const animateStep = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const angle = targetAngle * progress;
-      group.setAttribute("transform", `rotate(${angle})`);
-      if (progress < 1) {
-        requestAnimationFrame(animateStep);
-      } else {
-        group.setAttribute("transform", "");
-        this.currentElement = newElem;
-        this.updateVertices();
-        this.animating = false;
-      }
-    };
-    requestAnimationFrame(animateStep);
+    await new Promise(resolve => {
+      const animateStep = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        group.setAttribute("transform", `rotate(${targetAngle * progress})`);
+        if (progress < 1) {
+          requestAnimationFrame(animateStep);
+        } else {
+          resolve();
+        }
+      };
+      requestAnimationFrame(animateStep);
+    });
+    group.setAttribute("transform", "");
+    this.currentElement = newElem;
+    this.updateVertices();
+    this.animating = false;
   }
 
-  handleRotate120Click() {
+  async handleRotate120Click() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'r';
@@ -346,10 +308,10 @@ class TriangleGroupDemo extends LitElement {
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
     this.updateFormulaDisplay(trans, oldElem, newElem);
-    this.animateRotation(120, 500, newElem);
+    await this.animateRotation(120, 500, newElem);
   }
 
-  handleRotate240Click() {
+  async handleRotate240Click() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'r2';
@@ -357,30 +319,33 @@ class TriangleGroupDemo extends LitElement {
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
     this.updateFormulaDisplay(trans, oldElem, newElem);
-    this.animateRotation(240, 1000, newElem);
+    await this.animateRotation(240, 1000, newElem);
   }
 
-  animateReflection(duration, newElem) {
+  async animateReflection(duration, newElem) {
     const group = this.renderRoot.querySelector("#triangle-group");
     const startTime = performance.now();
-    const animateStep = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const currentScale = 1 - 2 * progress; // from 1 to -1
-      group.setAttribute("transform", `scale(${currentScale}, 1)`);
-      if (progress < 1) {
-        requestAnimationFrame(animateStep);
-      } else {
-        group.setAttribute("transform", "");
-        this.currentElement = newElem;
-        this.updateVertices();
-        this.animating = false;
-      }
-    };
-    requestAnimationFrame(animateStep);
+    await new Promise(resolve => {
+      const animateStep = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const currentScale = 1 - 2 * progress;
+        group.setAttribute("transform", `scale(${currentScale}, 1)`);
+        if (progress < 1) {
+          requestAnimationFrame(animateStep);
+        } else {
+          resolve();
+        }
+      };
+      requestAnimationFrame(animateStep);
+    });
+    group.setAttribute("transform", "");
+    this.currentElement = newElem;
+    this.updateVertices();
+    this.animating = false;
   }
 
-  handleReflectClick() {
+  async handleReflectClick() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'f';
@@ -388,42 +353,49 @@ class TriangleGroupDemo extends LitElement {
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
     this.updateFormulaDisplay(trans, oldElem, newElem);
-    this.animateReflection(500, newElem);
+    await this.animateReflection(500, newElem);
   }
 
-  animateFlipThenRotation(targetAngle, flipDuration, rotationDuration, newElem) {
+  async animateFlipThenRotation(targetAngle, flipDuration, rotationDuration, newElem) {
     const group = this.renderRoot.querySelector("#triangle-group");
+    // Flip phase
     const flipStartTime = performance.now();
-    const animateFlip = (now) => {
-      const elapsed = now - flipStartTime;
-      const progress = Math.min(elapsed / flipDuration, 1);
-      const currentScale = 1 - 2 * progress;
-      group.setAttribute("transform", `scale(${currentScale}, 1)`);
-      if (progress < 1) {
-        requestAnimationFrame(animateFlip);
-      } else {
-        const rotationStartTime = performance.now();
-        const animateRotationPhase = (now2) => {
-          const elapsed2 = now2 - rotationStartTime;
-          const progress2 = Math.min(elapsed2 / rotationDuration, 1);
-          const angle = targetAngle * progress2;
-          group.setAttribute("transform", `rotate(${angle}) scale(-1,1)`);
-          if (progress2 < 1) {
-            requestAnimationFrame(animateRotationPhase);
-          } else {
-            group.setAttribute("transform", "");
-            this.currentElement = newElem;
-            this.updateVertices();
-            this.animating = false;
-          }
-        };
-        requestAnimationFrame(animateRotationPhase);
-      }
-    };
-    requestAnimationFrame(animateFlip);
+    await new Promise(resolve => {
+      const animateFlip = (now) => {
+        const elapsed = now - flipStartTime;
+        const progress = Math.min(elapsed / flipDuration, 1);
+        const currentScale = 1 - 2 * progress;
+        group.setAttribute("transform", `scale(${currentScale}, 1)`);
+        if (progress < 1) {
+          requestAnimationFrame(animateFlip);
+        } else {
+          resolve();
+        }
+      };
+      requestAnimationFrame(animateFlip);
+    });
+    // Rotation phase (with reflection in place)
+    const rotationStartTime = performance.now();
+    await new Promise(resolve => {
+      const animateRotationPhase = (now2) => {
+        const elapsed2 = now2 - rotationStartTime;
+        const progress2 = Math.min(elapsed2 / rotationDuration, 1);
+        group.setAttribute("transform", `rotate(${targetAngle * progress2}) scale(-1,1)`);
+        if (progress2 < 1) {
+          requestAnimationFrame(animateRotationPhase);
+        } else {
+          resolve();
+        }
+      };
+      requestAnimationFrame(animateRotationPhase);
+    });
+    group.setAttribute("transform", "");
+    this.currentElement = newElem;
+    this.updateVertices();
+    this.animating = false;
   }
 
-  handleRFClick() {
+  async handleRFClick() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'rf';
@@ -431,10 +403,10 @@ class TriangleGroupDemo extends LitElement {
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
     this.updateFormulaDisplay(trans, oldElem, newElem);
-    this.animateFlipThenRotation(120, 500, 500, newElem);
+    await this.animateFlipThenRotation(120, 500, 500, newElem);
   }
 
-  handleR2FClick() {
+  async handleR2FClick() {
     if (this.animating) return;
     this.animating = true;
     const trans = 'r2f';
@@ -442,13 +414,10 @@ class TriangleGroupDemo extends LitElement {
     const newElem = composeD3(trans, oldElem);
     this.highlightMultiplicationCell(trans, oldElem);
     this.updateFormulaDisplay(trans, oldElem, newElem);
-    this.animateFlipThenRotation(240, 500, 1000, newElem);
+    await this.animateFlipThenRotation(240, 500, 1000, newElem);
   }
 
   // --- Interactive Sections for Group Properties ---
-  // Instead of using string interpolation (which calls toString on a TemplateResult),
-  // we use Lit’s render() to update the container with a TemplateResult.
-
   handleInteractiveClosure() {
     const a = this.renderRoot.querySelector('#closure-a').value;
     const b = this.renderRoot.querySelector('#closure-b').value;
@@ -492,17 +461,13 @@ class TriangleGroupDemo extends LitElement {
   }
 
   render() {
-    // The order of elements (using the six D₃ elements) is important.
     const elements = ["1", "r", "r2", "f", "rf", "r2f"];
     return html`
       <h1>Triangle Group Demonstration (Dihedral Group D₃)</h1>
       
-      <!-- Formula display using the reactive property -->
       <div id="formula-display" data-test-id="formula-display">${this.formula}</div>
       
-      <!-- Container for the SVG triangle and multiplication table -->
       <div class="demo-container">
-        <!-- SVG Triangle -->
         <svg id="triangle-svg" width="300" height="300" viewBox="-150 -150 300 300" aria-label="Triangle group demonstration">
           <g id="triangle-group">
             <polygon points="0,-100 86.6,50 -86.6,50" fill="#007BFF" stroke="#0056b3" stroke-width="3"></polygon>
@@ -512,7 +477,6 @@ class TriangleGroupDemo extends LitElement {
           </g>
         </svg>
         
-        <!-- Multiplication Table for D₃ (generated dynamically with data attributes) -->
         <div id="multiplication-table">
           <table>
             <thead>
@@ -537,7 +501,6 @@ class TriangleGroupDemo extends LitElement {
         </div>
       </div>
       
-      <!-- Buttons -->
       <div class="buttons">
         <button id="identity-button" 
           aria-label="Apply identity transformation"
@@ -590,7 +553,6 @@ class TriangleGroupDemo extends LitElement {
         </button>
       </div>
       
-      <!-- Interactive Sections for Group Properties -->
       <div class="interactive">
         <section id="closure-section" aria-labelledby="closure-heading" data-test-id="closure-section">
           <h2 id="closure-heading">Closure</h2>
@@ -696,7 +658,7 @@ class TriangleGroupDemo extends LitElement {
           </select>
           <button id="check-inverse-prop" 
             aria-label="Check inverse property"
-            data-test-id="check-inverse-prop-button"
+            data-test-id="inverse-result-prop-button"
             @click="${this.handleInteractiveInverseProp}">
             Check Inverse
           </button>
