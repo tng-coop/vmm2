@@ -1,5 +1,3 @@
-// src/main.js
-
 // Import global styles and Shoelace components
 import '@shoelace-style/shoelace/dist/themes/light.css';
 import '@shoelace-style/shoelace/dist/components/button/button.js';
@@ -15,6 +13,7 @@ import './triangle-group-demo.js';
 import { LitElement, html, css } from 'lit';
 
 class MyApp extends LitElement {
+  // Define styles for this component.
   static styles = css`
     header {
       text-align: center;
@@ -40,17 +39,22 @@ class MyApp extends LitElement {
     }
   `;
 
+  // Declare reactive properties
   static properties = {
     activeView: { type: String },
     randomVerse: { type: String }
   };
+
+  // Class fields with explicit type annotations.
+  activeView: string;
+  randomVerse: string;
 
   constructor() {
     super();
     this.activeView = '';
 
     // Array of Bible verses for the footer.
-    const verses = [
+    const verses: string[] = [
       "Ecclesiastes 1:13 – 'And I applied my mind to seek and to search out by wisdom all that is done under heaven; it is an unhappy business that God has given to the sons of men to be busy with.'",
       "Romans 1:20 – 'Ever since the creation of the world his invisible nature, namely, his eternal power and deity, has been clearly perceived in the things that have been made. So they are without excuse;'",
       "Psalm 19:1 – 'The heavens are telling the glory of God; and the firmament proclaims his handiwork.'",
@@ -100,7 +104,8 @@ class MyApp extends LitElement {
     `;
   }
 
-  handleMenuClick(view) {
+  // Type annotate the parameter as a string.
+  handleMenuClick(view: string): void {
     this.activeView = view;
   }
 }
