@@ -1,16 +1,15 @@
 {
-  "name": "rollup-shoelace-lit",
+  "name": "vite-shoelace-lit",
   "version": "1.0.0",
-  "description": "A sample project using Rollup, Shoelace, and Lit with 2025 best practices",
+  "description": "A sample project using Vite, Shoelace, and Lit with 2025 best practices",
   "type": "module",
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
-    "serve": "live-server --open=./index.html",
-    "start": "concurrently \"rollup -c -w\" \"live-server --open=./index.html\"",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "update-all": "ncu -u --target=latest && npm install"
   },
-  "main": "index.js",
+  "main": "src/main.js",
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -20,12 +19,6 @@
     "prismjs": "^1.29.0"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^28.0.2",
-    "@rollup/plugin-node-resolve": "^16.0.0",
-    "concurrently": "^9.1.2",
-    "live-server": "^1.2.2",
-    "npm-check-updates": "^17.1.14",
-    "rollup": "^4.34.1",
-    "rollup-plugin-postcss": "^4.0.2"
+    "vite": "^4.0.0"
   }
 }

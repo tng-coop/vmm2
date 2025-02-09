@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rollup + Shoelace + Lit Site</title>
+    <title>Vite + Shoelace + Lit Site</title>
     <style>
       /* Remove default margin and padding */
       html,
@@ -11,14 +11,13 @@
         margin: 0;
         padding: 0;
       }
-    </style>    
-    <!-- Include the bundled CSS -->
-    <link rel="stylesheet" href="dist/bundle.css" />
+    </style>
+    <!-- No need to pre-load a bundled CSS file; Vite will extract/import CSS automatically -->
   </head>
   <body>
     <!-- Our custom element -->
     <my-app></my-app>
-    <!-- Load the bundled script -->
-    <script type="module" src="dist/bundle.js"></script>
+    <!-- Load the entry script from src -->
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
