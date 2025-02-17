@@ -1,12 +1,22 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css,  } from 'lit';
 import BiwaScheme from 'biwascheme';
+import { customElement, property } from 'lit/decorators';
 
+@customElement('lisp-demo')
 export class LispDemo extends LitElement {
-  static properties = {
-    code: { type: String },
-    result: { type: String },
-    error: { type: String },
-  };
+  @property({ type: String })
+  code: string = `(define (fact n)
+  (if (< n 2)
+      1
+      (* n (fact (- n 1)))))
+
+(fact 5)`;
+
+  @property({ type: String })
+  result: string = '';
+
+  @property({ type: String })
+  error: string = '';
 
   static styles = css`
     :host {
@@ -54,31 +64,16 @@ export class LispDemo extends LitElement {
     }
   `;
 
-  constructor() {
-    super();
-    // A sample Scheme snippet: define a factorial function and compute (fact 5)
-    this.code = `(define (fact n)
-  (if (< n 2)
-      1
-      (* n (fact (- n 1)))))
-
-(fact 5)`;
-    this.result = '';
-    this.error = '';
-  }
-
-  evaluateCode() {
+  evaluateCode(): void {
     this.result = '';
     this.error = '';
     try {
       const interpreter = new BiwaScheme.Interpreter();
-      interpreter.evaluate(this.code, (res) => {
-        // Convert the result to a string, if defined.
+      interpreter.evaluate(this.code, (res: unknown) => {
         this.result = res !== undefined ? res.toString() : 'No result';
-        // Trigger an update after the asynchronous callback.
         this.requestUpdate();
       });
-    } catch (err) {
+    } catch (err: any) {
       this.error = err.message;
     }
   }
@@ -91,7 +86,10 @@ export class LispDemo extends LitElement {
       </p>
       <textarea
         .value=${this.code}
-        @input=${(e) => (this.code = e.target.value)}
+        @input=${(e: Event) => {
+          const target = e.target as HTMLTextAreaElement;
+          this.code = target.value;
+        }}
       ></textarea>
       <br />
       <button @click=${this.evaluateCode}>Evaluate</button>
@@ -104,5 +102,3 @@ export class LispDemo extends LitElement {
     `;
   }
 }
-
-customElements.define('lisp-demo', LispDemo);

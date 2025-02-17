@@ -55,6 +55,12 @@ export class EvenGroupDemo extends LitElement {
     }
   `;
 
+  // Typed properties.
+  closureResult: string;
+  identityResult: string;
+  associativityResult: string;
+  inverseResult: string;
+
   constructor() {
     super();
     this.closureResult = '';
@@ -64,66 +70,77 @@ export class EvenGroupDemo extends LitElement {
   }
 
   // Helper function to determine if a number is even.
-  isEven(n) {
+  isEven(n: number): boolean {
     return n % 2 === 0;
   }
 
-  checkClosure() {
-    const a = parseInt(this.renderRoot.getElementById('closure-a').value, 10);
-    const b = parseInt(this.renderRoot.getElementById('closure-b').value, 10);
+  checkClosure(): void {
+    const aInput = this.renderRoot.querySelector('#closure-a') as HTMLInputElement;
+    const bInput = this.renderRoot.querySelector('#closure-b') as HTMLInputElement;
+    const a = parseInt(aInput.value, 10);
+    const b = parseInt(bInput.value, 10);
+
     if (isNaN(a) || isNaN(b)) {
-      this.closureResult = "Please enter valid integers for a and b.";
+      this.closureResult = 'Please enter valid integers for a and b.';
       return;
     }
     if (!this.isEven(a) || !this.isEven(b)) {
-      this.closureResult = "Both a and b must be even numbers.";
+      this.closureResult = 'Both a and b must be even numbers.';
       return;
     }
     const sum = a + b;
     this.closureResult = `Result: ${a} + ${b} = ${sum}. Closure holds because the sum is even.`;
   }
 
-  checkIdentity() {
-    const a = parseInt(this.renderRoot.getElementById('identity-a').value, 10);
+  checkIdentity(): void {
+    const aInput = this.renderRoot.querySelector('#identity-a') as HTMLInputElement;
+    const a = parseInt(aInput.value, 10);
+
     if (isNaN(a)) {
-      this.identityResult = "Please enter a valid integer for a.";
+      this.identityResult = 'Please enter a valid integer for a.';
       return;
     }
     if (!this.isEven(a)) {
-      this.identityResult = "Please enter an even number for a.";
+      this.identityResult = 'Please enter an even number for a.';
       return;
     }
     const result = a + 0;
     this.identityResult = `Result: ${a} + 0 = ${result}. The identity element is 0, which is even.`;
   }
 
-  checkAssociativity() {
-    const a = parseInt(this.renderRoot.getElementById('assoc-a').value, 10);
-    const b = parseInt(this.renderRoot.getElementById('assoc-b').value, 10);
-    const c = parseInt(this.renderRoot.getElementById('assoc-c').value, 10);
+  checkAssociativity(): void {
+    const aInput = this.renderRoot.querySelector('#assoc-a') as HTMLInputElement;
+    const bInput = this.renderRoot.querySelector('#assoc-b') as HTMLInputElement;
+    const cInput = this.renderRoot.querySelector('#assoc-c') as HTMLInputElement;
+    const a = parseInt(aInput.value, 10);
+    const b = parseInt(bInput.value, 10);
+    const c = parseInt(cInput.value, 10);
+
     if (isNaN(a) || isNaN(b) || isNaN(c)) {
-      this.associativityResult = "Please enter valid integers for a, b, and c.";
+      this.associativityResult = 'Please enter valid integers for a, b, and c.';
       return;
     }
     if (!this.isEven(a) || !this.isEven(b) || !this.isEven(c)) {
-      this.associativityResult = "All of a, b, and c must be even numbers.";
+      this.associativityResult = 'All of a, b, and c must be even numbers.';
       return;
     }
     const left = (a + b) + c;
     const right = a + (b + c);
     let message = `Result: ( ${a} + ${b} ) + ${c} = ${left} and ${a} + ( ${b} + ${c} ) = ${right}. `;
-    message += (left === right) ? "Associativity holds." : "Associativity does not hold!";
+    message += left === right ? 'Associativity holds.' : 'Associativity does not hold!';
     this.associativityResult = message;
   }
 
-  checkInverse() {
-    const a = parseInt(this.renderRoot.getElementById('inverse-a').value, 10);
+  checkInverse(): void {
+    const aInput = this.renderRoot.querySelector('#inverse-a') as HTMLInputElement;
+    const a = parseInt(aInput.value, 10);
+
     if (isNaN(a)) {
-      this.inverseResult = "Please enter a valid integer for a.";
+      this.inverseResult = 'Please enter a valid integer for a.';
       return;
     }
     if (!this.isEven(a)) {
-      this.inverseResult = "Please enter an even number for a.";
+      this.inverseResult = 'Please enter an even number for a.';
       return;
     }
     const inverse = -a;
@@ -159,9 +176,9 @@ export class EvenGroupDemo extends LitElement {
           </math>
         </p>
         <label for="closure-a">a:</label>
-        <input id="closure-a" type="number" step="1">
+        <input id="closure-a" type="number" step="1" />
         <label for="closure-b">b:</label>
-        <input id="closure-b" type="number" step="1">
+        <input id="closure-b" type="number" step="1" />
         <button @click=${this.checkClosure} id="check-closure">Check Closure</button>
         <div class="result" id="closure-result">${this.closureResult}</div>
       </section>
@@ -179,7 +196,7 @@ export class EvenGroupDemo extends LitElement {
           </math>
         </p>
         <label for="identity-a">a:</label>
-        <input id="identity-a" type="number" step="1">
+        <input id="identity-a" type="number" step="1" />
         <button @click=${this.checkIdentity} id="check-identity">Check Identity</button>
         <div class="result" id="identity-result">${this.identityResult}</div>
       </section>
@@ -207,11 +224,11 @@ export class EvenGroupDemo extends LitElement {
           </math>
         </p>
         <label for="assoc-a">a:</label>
-        <input id="assoc-a" type="number" step="1">
+        <input id="assoc-a" type="number" step="1" />
         <label for="assoc-b">b:</label>
-        <input id="assoc-b" type="number" step="1">
+        <input id="assoc-b" type="number" step="1" />
         <label for="assoc-c">c:</label>
-        <input id="assoc-c" type="number" step="1">
+        <input id="assoc-c" type="number" step="1" />
         <button @click=${this.checkAssociativity} id="check-associativity">Check Associativity</button>
         <div class="result" id="associativity-result">${this.associativityResult}</div>
       </section>
@@ -234,7 +251,7 @@ export class EvenGroupDemo extends LitElement {
           </math>
         </p>
         <label for="inverse-a">a:</label>
-        <input id="inverse-a" type="number" step="1">
+        <input id="inverse-a" type="number" step="1" />
         <button @click=${this.checkInverse} id="check-inverse">Check Inverse</button>
         <div class="result" id="inverse-result">${this.inverseResult}</div>
       </section>
