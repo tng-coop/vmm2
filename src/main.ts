@@ -7,6 +7,7 @@ import '@shoelace-style/shoelace/dist/components/menu-item/menu-item.js';
 
 // Import the existing custom elements
 import './z-group-demo.js';
+import './lisp-demo.js';
 import './even-group-demo.js';
 import './triangle-group-demo.ts';
 
@@ -39,7 +40,7 @@ class MyApp extends LitElement {
     }
   `;
 
-  // Declare reactive properties
+  // Declare reactive properties.
   static properties = {
     activeView: { type: String },
     randomVerse: { type: String }
@@ -74,7 +75,7 @@ class MyApp extends LitElement {
       </header>
       <nav class="menu">
         <sl-dropdown>
-          <sl-button slot="trigger" variant="primary">Group Demos</sl-button>
+          <sl-button slot="trigger" variant="primary">Exhibits</sl-button>
           <sl-menu>
             <sl-menu-item @click=${() => this.handleMenuClick('group')}>
               Group Theory Exhibit
@@ -84,6 +85,9 @@ class MyApp extends LitElement {
             </sl-menu-item>
             <sl-menu-item @click=${() => this.handleMenuClick('other')}>
               Triangle Groups Exhibit
+            </sl-menu-item>
+            <sl-menu-item @click=${() => this.handleMenuClick('lisp')}>
+              Lisp Demo
             </sl-menu-item>
           </sl-menu>
         </sl-dropdown>
@@ -95,7 +99,9 @@ class MyApp extends LitElement {
             ? html`<even-group-demo></even-group-demo>`
             : this.activeView === 'other'
               ? html`<triangle-group-demo></triangle-group-demo>`
-              : html`<p>Welcome to the Museum of Mathematics. Please select an exhibit from the menu above.</p>`
+              : this.activeView === 'lisp'
+                ? html`<lisp-demo></lisp-demo>`
+                : html`<p>Welcome to the Museum of Mathematics. Please select an exhibit from the menu above.</p>`
         }
       </main>
       <footer>
