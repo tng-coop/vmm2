@@ -46,43 +46,75 @@ export class ZGroupDemo extends LitElement {
     }
   `;
 
+  // Declare properties with type annotations
+  closureResult: string = '';
+  identityResult: string = '';
+  associativityResult: string = '';
+  inverseResult: string = '';
+
   constructor() {
     super();
-    this.closureResult = '';
-    this.identityResult = '';
-    this.associativityResult = '';
-    this.inverseResult = '';
   }
 
-  checkClosure() {
-    const a = parseInt(this.renderRoot.querySelector('#closure-a').value, 10);
-    const b = parseInt(this.renderRoot.querySelector('#closure-b').value, 10);
+  checkClosure(): void {
+    const inputA = this.renderRoot.querySelector<HTMLInputElement>('#closure-a');
+    const inputB = this.renderRoot.querySelector<HTMLInputElement>('#closure-b');
+
+    if (!inputA || !inputB) {
+      this.closureResult = 'Input elements not found.';
+      return;
+    }
+
+    const a = parseInt(inputA.value, 10);
+    const b = parseInt(inputB.value, 10);
+
     if (isNaN(a) || isNaN(b)) {
       this.closureResult = 'Please enter valid integers for a and b.';
       return;
     }
+
     const sum = a + b;
     this.closureResult = `Result: ${a} + ${b} = ${sum}. Closure holds because the sum is an integer.`;
   }
 
-  checkIdentity() {
-    const a = parseInt(this.renderRoot.querySelector('#identity-a').value, 10);
+  checkIdentity(): void {
+    const inputA = this.renderRoot.querySelector<HTMLInputElement>('#identity-a');
+
+    if (!inputA) {
+      this.identityResult = 'Input element not found.';
+      return;
+    }
+
+    const a = parseInt(inputA.value, 10);
+
     if (isNaN(a)) {
       this.identityResult = 'Please enter a valid integer for a.';
       return;
     }
+
     const result = a + 0;
     this.identityResult = `Result: ${a} + 0 = ${result}. The identity element is 0.`;
   }
 
-  checkAssociativity() {
-    const a = parseInt(this.renderRoot.querySelector('#assoc-a').value, 10);
-    const b = parseInt(this.renderRoot.querySelector('#assoc-b').value, 10);
-    const c = parseInt(this.renderRoot.querySelector('#assoc-c').value, 10);
+  checkAssociativity(): void {
+    const inputA = this.renderRoot.querySelector<HTMLInputElement>('#assoc-a');
+    const inputB = this.renderRoot.querySelector<HTMLInputElement>('#assoc-b');
+    const inputC = this.renderRoot.querySelector<HTMLInputElement>('#assoc-c');
+
+    if (!inputA || !inputB || !inputC) {
+      this.associativityResult = 'Input elements not found.';
+      return;
+    }
+
+    const a = parseInt(inputA.value, 10);
+    const b = parseInt(inputB.value, 10);
+    const c = parseInt(inputC.value, 10);
+
     if (isNaN(a) || isNaN(b) || isNaN(c)) {
       this.associativityResult = 'Please enter valid integers for a, b, and c.';
       return;
     }
+
     const left = (a + b) + c;
     const right = a + (b + c);
     let message = `Result: (${a} + ${b}) + ${c} = ${left} and ${a} + (${b} + ${c}) = ${right}. `;
@@ -90,12 +122,21 @@ export class ZGroupDemo extends LitElement {
     this.associativityResult = message;
   }
 
-  checkInverse() {
-    const a = parseInt(this.renderRoot.querySelector('#inverse-a').value, 10);
+  checkInverse(): void {
+    const inputA = this.renderRoot.querySelector<HTMLInputElement>('#inverse-a');
+
+    if (!inputA) {
+      this.inverseResult = 'Input element not found.';
+      return;
+    }
+
+    const a = parseInt(inputA.value, 10);
+
     if (isNaN(a)) {
       this.inverseResult = 'Please enter a valid integer for a.';
       return;
     }
+
     const inverse = -a;
     const sum = a + inverse;
     this.inverseResult = `Result: ${a} + (${inverse}) = ${sum}. Every integer has an inverse such that a + (-a) = 0.`;
