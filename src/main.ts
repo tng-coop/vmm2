@@ -46,7 +46,6 @@ class MyApp extends LitElement {
     randomVerse: { type: String }
   };
 
-  // Class fields with explicit type annotations.
   activeView: string;
   randomVerse: string;
 
@@ -74,6 +73,7 @@ class MyApp extends LitElement {
         <p>Explore our exhibits by selecting one from the menu below.</p>
       </header>
       <nav class="menu">
+        <!-- Dropdown for Exhibits -->
         <sl-dropdown>
           <sl-button slot="trigger" variant="primary">Exhibits</sl-button>
           <sl-menu>
@@ -86,6 +86,13 @@ class MyApp extends LitElement {
             <sl-menu-item @click=${() => this.handleMenuClick('other')}>
               Triangle Groups Exhibit
             </sl-menu-item>
+          </sl-menu>
+        </sl-dropdown>
+
+        <!-- Dropdown for Demos -->
+        <sl-dropdown>
+          <sl-button slot="trigger" variant="primary">Demos</sl-button>
+          <sl-menu>
             <sl-menu-item @click=${() => this.handleMenuClick('lisp')}>
               Lisp Demo
             </sl-menu-item>
