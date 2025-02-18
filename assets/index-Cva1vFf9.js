@@ -1922,18 +1922,25 @@
       font-weight: bold;
       text-align: center;
     }
-  `;__decorateClass$1([n$3({type:String})],TriangleGroupDemo.prototype,"currentElement",2);__decorateClass$1([n$3({type:Boolean})],TriangleGroupDemo.prototype,"animating",2);__decorateClass$1([n$3({type:Object})],TriangleGroupDemo.prototype,"formula",2);TriangleGroupDemo=__decorateClass$1([t$2("triangle-group-demo")],TriangleGroupDemo);var __defProp=Object.defineProperty,__getOwnPropDesc=Object.getOwnPropertyDescriptor,__decorateClass=(D,w,O,F)=>{for(var q=F>1?void 0:F?__getOwnPropDesc(w,O):w,W=D.length-1,U;W>=0;W--)(U=D[W])&&(q=(F?U(w,O,q):U(q))||q);return F&&q&&__defProp(w,O,q),q};let HalfAdderDemo=class extends r$4{constructor(){super(...arguments),this.result="",this.error="",this.hiddenCode=`(define (xor a b)
+  `;__decorateClass$1([n$3({type:String})],TriangleGroupDemo.prototype,"currentElement",2);__decorateClass$1([n$3({type:Boolean})],TriangleGroupDemo.prototype,"animating",2);__decorateClass$1([n$3({type:Object})],TriangleGroupDemo.prototype,"formula",2);TriangleGroupDemo=__decorateClass$1([t$2("triangle-group-demo")],TriangleGroupDemo);var __defProp=Object.defineProperty,__getOwnPropDesc=Object.getOwnPropertyDescriptor,__decorateClass=(D,w,O,F)=>{for(var q=F>1?void 0:F?__getOwnPropDesc(w,O):w,W=D.length-1,U;W>=0;W--)(U=D[W])&&(q=(F?U(w,O,q):U(q))||q);return F&&q&&__defProp(w,O,q),q};const andDeco=Decoration.mark({class:"cm-and-highlight"}),xorDeco=Decoration.mark({class:"cm-xor-highlight"}),keywordHighlighter=ViewPlugin.fromClass(class{constructor(D){this.decorations=this.buildDecorations(D)}update(D){(D.docChanged||D.viewportChanged)&&(this.decorations=this.buildDecorations(D.view))}buildDecorations(D){const w=new RangeSetBuilder,O=/\b(and|xor)\b/g;for(let{from:F,to:q}of D.visibleRanges){const W=D.state.doc.sliceString(F,q);let U;for(;(U=O.exec(W))!==null;){const K=U[1],G=F+U.index,Y=G+K.length,Q=D.state.doc.lineAt(G);if(Q.text.slice(0,G-Q.from).indexOf(";")!==-1)continue;const J=K==="and"?andDeco:xorDeco;w.add(G,Y,J)}}return w.finish()}},{decorations:D=>D.decorations});let HalfAdderDemo=class extends r$4{constructor(){super(...arguments),this.result="",this.error="",this.hiddenCode=`(define (my-and a b)
+  (if (and (= a 1) (= b 1))
+      1
+      0))
+(define and my-and)
+(define (xor a b)
   (if (= (+ a b) 1)
       1
       0))`,this.code=`(define (half-adder a b)
-  (cons (* a b) (xor a b)))
+  (cons (and a b) (xor a b)))
 
 ; Test the half-adder with inputs: 1 and 0
-(half-adder 1 0)`}firstUpdated(){var O;const D=EditorState.create({doc:this.code,extensions:[basicSetup,StreamLanguage.define(scheme)]}),w=(O=this.shadowRoot)==null?void 0:O.querySelector("#editor");w&&(this.editorView=new EditorView({state:D,parent:w}))}evaluateCode(){if(this.result="",this.error="",this.editorView){const D=this.editorView.state.doc.toString(),w=`${this.hiddenCode}
+(half-adder 1 0)
+`}firstUpdated(){var O;const D=EditorState.create({doc:this.code,extensions:[basicSetup,StreamLanguage.define(scheme),keywordHighlighter]}),w=(O=this.shadowRoot)==null?void 0:O.querySelector("#editor");w&&(this.editorView=new EditorView({state:D,parent:w}))}evaluateCode(){if(this.result="",this.error="",this.editorView){const D=this.editorView.state.doc.toString(),w=`${this.hiddenCode}
 ${D}`,O=new BiwaScheme$1.Interpreter;try{O.evaluate(w,F=>{this.result=F!==BiwaScheme$1.undef?F.toString():"No result",this.requestUpdate()})}catch(F){this.error=F.message}}}render(){return x`
       <h2>Half-Adder Demo</h2>
       <p>
-        The XOR function definition is hidden. Edit the half-adder code below and click "Evaluate" to simulate a half-adder using 0 and 1.
+        The definitions for <strong>and</strong> and <strong>xor</strong> are hidden.
+        Edit the half-adder code below and click "Evaluate" to simulate a half-adder using 0 and 1.
       </p>
       <div id="editor"></div>
       <br />
@@ -1980,6 +1987,13 @@ ${D}`,O=new BiwaScheme$1.Interpreter;try{O.evaluate(w,F=>{this.result=F!==BiwaSc
     .error {
       background: #ffe0e0;
       color: #990000;
+    }
+    /* Special highlighting for the keywords "and" and "xor" */
+    .cm-and-highlight {
+      background-color: #a0d8ef; /* Light blue */
+    }
+    .cm-xor-highlight {
+      background-color: #ffcc80; /* Light orange */
     }
   `;__decorateClass([n$3({type:String})],HalfAdderDemo.prototype,"result",2);__decorateClass([n$3({type:String})],HalfAdderDemo.prototype,"error",2);HalfAdderDemo=__decorateClass([t$2("half-adder-demo")],HalfAdderDemo);const De=class De extends r$4{constructor(){super(),this.activeView="";const w=["Ecclesiastes 1:13 – 'And I applied my mind to seek and to search out by wisdom all that is done under heaven; it is an unhappy business that God has given to the sons of men to be busy with.'","Romans 1:20 – 'Ever since the creation of the world his invisible nature, namely, his eternal power and deity, has been clearly perceived in the things that have been made. So they are without excuse;'","Psalm 19:1 – 'The heavens are telling the glory of God; and the firmament proclaims his handiwork.'","Colossians 1:16–17 – 'For in him all things were created, in heaven and on earth, visible and invisible, whether thrones or dominions or principalities or authorities—all things were created through him and for him. He is before all things, and in him all things hold together.'","Proverbs 1:5 – 'The wise man also may hear and increase in learning, and the man of understanding acquire skill,'"];this.randomVerse=w[Math.floor(Math.random()*w.length)]}render(){return x`
       <header>
@@ -2046,4 +2060,4 @@ ${D}`,O=new BiwaScheme$1.Interpreter;try{O.evaluate(w,F=>{this.result=F!==BiwaSc
       box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
     }
   `,De.properties={activeView:{type:String},randomVerse:{type:String}};let MyApp=De;customElements.define("my-app",MyApp);
-//# sourceMappingURL=index-DTs-VRn8.js.map
+//# sourceMappingURL=index-Cva1vFf9.js.map
