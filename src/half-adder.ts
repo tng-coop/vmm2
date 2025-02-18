@@ -1,25 +1,33 @@
 import { LitElement, html, css } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
+import { basicSetup } from 'codemirror';
+import { StreamLanguage } from '@codemirror/language';
+import { scheme } from '@codemirror/legacy-modes/mode/scheme';
 import BiwaScheme from 'biwascheme';
-import { customElement, property } from 'lit/decorators';
 
 @customElement('half-adder-demo')
 export class HalfAdderDemo extends LitElement {
-  @property({ type: String })
-  code: string = `(define (xor a b)
-  (or (and a (not b))
-      (and (not a) b)))
-
-(define (half-adder a b)
-  (cons (and a b) (xor a b)))
-
-; Test the half-adder with inputs: #t and #f
-(half-adder #t #f)`;
-
   @property({ type: String })
   result: string = '';
 
   @property({ type: String })
   error: string = '';
+
+  // This code will be hidden from the editor.
+  private hiddenCode: string = `(define (xor a b)
+  (or (and a (not b))
+      (and (not a) b)))`;
+
+  // The visible code that the user can edit.
+  code: string = `(define (half-adder a b)
+  (cons (and a b) (xor a b)))
+
+; Test the half-adder with inputs: #t and #f
+(half-adder #t #f)`;
+
+  private editorView?: EditorView;
 
   static styles = css`
     :host {
@@ -31,15 +39,12 @@ export class HalfAdderDemo extends LitElement {
     h2 {
       color: #333;
     }
-    textarea {
-      width: 100%;
-      height: 150px;
-      font-family: monospace;
-      padding: 10px;
-      box-sizing: border-box;
-      font-size: 16px;
+    /* CodeMirror editor container */
+    #editor {
       border: 1px solid #ccc;
       border-radius: 4px;
+      height: 150px;
+      overflow: auto;
     }
     button {
       padding: 8px 16px;
@@ -67,17 +72,36 @@ export class HalfAdderDemo extends LitElement {
     }
   `;
 
+  firstUpdated() {
+    const state = EditorState.create({
+      doc: this.code,
+      extensions: [basicSetup, StreamLanguage.define(scheme)]
+    });
+    const editorContainer = this.shadowRoot?.querySelector('#editor');
+    if (editorContainer) {
+      this.editorView = new EditorView({
+        state,
+        parent: editorContainer as HTMLElement
+      });
+    }
+  }
+
   evaluateCode(): void {
     this.result = '';
     this.error = '';
-    try {
+    if (this.editorView) {
+      const userCode = this.editorView.state.doc.toString();
+      // Prepend the hidden XOR definition to the user code.
+      const fullCode = `${this.hiddenCode}\n${userCode}`;
       const interpreter = new BiwaScheme.Interpreter();
-      interpreter.evaluate(this.code, (res: unknown) => {
-        this.result = res !== undefined ? res.toString() : 'No result';
-        this.requestUpdate();
-      });
-    } catch (err: any) {
-      this.error = err.message;
+      try {
+        interpreter.evaluate(fullCode, (res: any) => {
+          this.result = res !== BiwaScheme.undef ? res.toString() : 'No result';
+          this.requestUpdate();
+        });
+      } catch (err: any) {
+        this.error = err.message;
+      }
     }
   }
 
@@ -85,15 +109,9 @@ export class HalfAdderDemo extends LitElement {
     return html`
       <h2>Half-Adder Demo using BiwaScheme</h2>
       <p>
-        Enter your Scheme code below and click "Evaluate" to simulate a half-adder.
+        The XOR function definition is hidden. Edit the half-adder code below and click "Evaluate" to simulate a half-adder.
       </p>
-      <textarea
-        .value=${this.code}
-        @input=${(e: Event) => {
-          const target = e.target as HTMLTextAreaElement;
-          this.code = target.value;
-        }}
-      ></textarea>
+      <div id="editor"></div>
       <br />
       <button @click=${this.evaluateCode}>Evaluate</button>
       ${this.result
