@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { EditorState, RangeSetBuilder } from '@codemirror/state';
-import { EditorView, ViewPlugin, Decoration, ViewUpdate } from '@codemirror/view';
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 import { basicSetup } from 'codemirror';
 import { StreamLanguage } from '@codemirror/language';
 import { scheme } from '@codemirror/legacy-modes/mode/scheme';
@@ -33,15 +33,7 @@ export class LispDemo extends LitElement {
     h2 {
       color: #333;
     }
-    /* The editor container */
-    #editor {
-      height: 150px;
-      border: 1px solid #ccc;
-      font-family: monospace;
-      font-size: 16px;
-      padding: 10px;
-      box-sizing: border-box;
-    }
+
     button {
       padding: 8px 16px;
       margin-top: 10px;
@@ -65,57 +57,18 @@ export class LispDemo extends LitElement {
       background: #ffe0e0;
       color: #990000;
     }
-    /* Custom decoration for highlighting a keyword (e.g. "define") */
-    .cm-content .highlight-word {
-      background-color: yellow;
-    }
   `;
 
   private editorView?: EditorView;
 
   firstUpdated() {
-    // Define a decoration to highlight the word "define"
-    const highlightDecoration = Decoration.mark({ class: 'highlight-word' });
-    function buildDecorations(view: EditorView) {
-      const builder = new RangeSetBuilder<Decoration>();
-      for (const { from, to } of view.visibleRanges) {
-        const text = view.state.doc.sliceString(from, to);
-        const regex = /\bdefine\b/g; // change this regex to highlight different keywords if desired
-        let match: RegExpExecArray | null;
-        while ((match = regex.exec(text)) !== null) {
-          builder.add(
-            from + match.index,
-            from + match.index + match[0].length,
-            highlightDecoration
-          );
-        }
-      }
-      return builder.finish();
-    }
-    const highlightPlugin = ViewPlugin.fromClass(
-      class {
-        decorations = buildDecorations(this.view);
-        constructor(public view: EditorView) {}
-        update(update: ViewUpdate) {
-          if (update.docChanged || update.viewportChanged) {
-            this.decorations = buildDecorations(update.view);
-          }
-        }
-      },
-      { decorations: v => v.decorations }
-    );
-
-    // Create the initial EditorState with CodeMirror's basic setup, Scheme language mode, and the highlight plugin.
+    // Create an EditorState with CodeMirror's basic setup and Scheme mode.
+    // No custom decoration plugin is added.
     const state = EditorState.create({
       doc: this.code,
-      extensions: [
-        basicSetup,
-        StreamLanguage.define(scheme),
-        highlightPlugin
-      ]
+      extensions: [basicSetup, StreamLanguage.define(scheme)]
     });
 
-    // Mount the CodeMirror editor into the shadow DOM
     const editorContainer = this.shadowRoot!.querySelector('#editor') as HTMLElement;
     this.editorView = new EditorView({
       state,
@@ -127,7 +80,6 @@ export class LispDemo extends LitElement {
     this.result = '';
     this.error = '';
     if (this.editorView) {
-      // Retrieve the current code from the editor
       const code = this.editorView.state.doc.toString();
       const interpreter = new BiwaScheme.Interpreter();
       interpreter.evaluate(code, (res: any) => {
@@ -145,12 +97,8 @@ export class LispDemo extends LitElement {
       </p>
       <div id="editor"></div>
       <button @click=${this.evaluateCode}>Evaluate</button>
-      ${this.result
-        ? html`<div class="result"><strong>Result:</strong> ${this.result}</div>`
-        : ''}
-      ${this.error
-        ? html`<div class="error"><strong>Error:</strong> ${this.error}</div>`
-        : ''}
+      ${this.result ? html`<div class="result"><strong>Result:</strong> ${this.result}</div>` : ''}
+      ${this.error ? html`<div class="error"><strong>Error:</strong> ${this.error}</div>` : ''}
     `;
   }
 }
