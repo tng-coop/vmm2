@@ -15,17 +15,18 @@ export class HalfAdderDemo extends LitElement {
   @property({ type: String })
   error: string = '';
 
-  // This code will be hidden from the editor.
+  // Hidden code: redefining XOR to work with numbers.
   private hiddenCode: string = `(define (xor a b)
-  (or (and a (not b))
-      (and (not a) b)))`;
+  (if (= (+ a b) 1)
+      1
+      0))`;
 
-  // The visible code that the user can edit.
+  // Visible code: using 0 and 1 instead of #t and #f.
   code: string = `(define (half-adder a b)
-  (cons (and a b) (xor a b)))
+  (cons (* a b) (xor a b)))
 
-; Test the half-adder with inputs: #t and #f
-(half-adder #t #f)`;
+; Test the half-adder with inputs: 1 and 0
+(half-adder 1 0)`;
 
   private editorView?: EditorView;
 
@@ -107,9 +108,9 @@ export class HalfAdderDemo extends LitElement {
 
   render() {
     return html`
-      <h2>Half-Adder Demo using BiwaScheme</h2>
+      <h2>Half-Adder Demo</h2>
       <p>
-        The XOR function definition is hidden. Edit the half-adder code below and click "Evaluate" to simulate a half-adder.
+        The XOR function definition is hidden. Edit the half-adder code below and click "Evaluate" to simulate a half-adder using 0 and 1.
       </p>
       <div id="editor"></div>
       <br />

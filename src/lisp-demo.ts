@@ -91,7 +91,7 @@ export class LispDemo extends LitElement {
 
   render() {
     return html`
-      <h2>Lisp Demo using BiwaScheme</h2>
+      <h2>Lisp Demo</h2>
       <p>
         Enter your Scheme (Lisp) code below and click "Evaluate" to run it.
       </p>
