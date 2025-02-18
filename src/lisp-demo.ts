@@ -1,6 +1,11 @@
-import { LitElement, html, css,  } from 'lit';
+import { LitElement, html, css } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { EditorState, RangeSetBuilder } from '@codemirror/state';
+import { EditorView, ViewPlugin, Decoration, ViewUpdate } from '@codemirror/view';
+import { basicSetup } from 'codemirror';
+import { StreamLanguage } from '@codemirror/language';
+import { scheme } from '@codemirror/legacy-modes/mode/scheme';
 import BiwaScheme from 'biwascheme';
-import { customElement, property } from 'lit/decorators';
 
 @customElement('lisp-demo')
 export class LispDemo extends LitElement {
@@ -28,15 +33,14 @@ export class LispDemo extends LitElement {
     h2 {
       color: #333;
     }
-    textarea {
-      width: 100%;
+    /* The editor container */
+    #editor {
       height: 150px;
+      border: 1px solid #ccc;
       font-family: monospace;
+      font-size: 16px;
       padding: 10px;
       box-sizing: border-box;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
     }
     button {
       padding: 8px 16px;
@@ -48,8 +52,7 @@ export class LispDemo extends LitElement {
       border-radius: 4px;
       cursor: pointer;
     }
-    .result,
-    .error {
+    .result, .error {
       margin-top: 20px;
       padding: 10px;
       border-radius: 4px;
@@ -62,19 +65,75 @@ export class LispDemo extends LitElement {
       background: #ffe0e0;
       color: #990000;
     }
+    /* Custom decoration for highlighting a keyword (e.g. "define") */
+    .cm-content .highlight-word {
+      background-color: yellow;
+    }
   `;
+
+  private editorView?: EditorView;
+
+  firstUpdated() {
+    // Define a decoration to highlight the word "define"
+    const highlightDecoration = Decoration.mark({ class: 'highlight-word' });
+    function buildDecorations(view: EditorView) {
+      const builder = new RangeSetBuilder<Decoration>();
+      for (const { from, to } of view.visibleRanges) {
+        const text = view.state.doc.sliceString(from, to);
+        const regex = /\bdefine\b/g; // change this regex to highlight different keywords if desired
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(text)) !== null) {
+          builder.add(
+            from + match.index,
+            from + match.index + match[0].length,
+            highlightDecoration
+          );
+        }
+      }
+      return builder.finish();
+    }
+    const highlightPlugin = ViewPlugin.fromClass(
+      class {
+        decorations = buildDecorations(this.view);
+        constructor(public view: EditorView) {}
+        update(update: ViewUpdate) {
+          if (update.docChanged || update.viewportChanged) {
+            this.decorations = buildDecorations(update.view);
+          }
+        }
+      },
+      { decorations: v => v.decorations }
+    );
+
+    // Create the initial EditorState with CodeMirror's basic setup, Scheme language mode, and the highlight plugin.
+    const state = EditorState.create({
+      doc: this.code,
+      extensions: [
+        basicSetup,
+        StreamLanguage.define(scheme),
+        highlightPlugin
+      ]
+    });
+
+    // Mount the CodeMirror editor into the shadow DOM
+    const editorContainer = this.shadowRoot!.querySelector('#editor') as HTMLElement;
+    this.editorView = new EditorView({
+      state,
+      parent: editorContainer
+    });
+  }
 
   evaluateCode(): void {
     this.result = '';
     this.error = '';
-    try {
+    if (this.editorView) {
+      // Retrieve the current code from the editor
+      const code = this.editorView.state.doc.toString();
       const interpreter = new BiwaScheme.Interpreter();
-      interpreter.evaluate(this.code, (res: unknown) => {
-        this.result = res !== undefined ? res.toString() : 'No result';
+      interpreter.evaluate(code, (res: any) => {
+        this.result = res === BiwaScheme.undef ? 'No result' : res.toString();
         this.requestUpdate();
       });
-    } catch (err: any) {
-      this.error = err.message;
     }
   }
 
@@ -84,14 +143,7 @@ export class LispDemo extends LitElement {
       <p>
         Enter your Scheme (Lisp) code below and click "Evaluate" to run it.
       </p>
-      <textarea
-        .value=${this.code}
-        @input=${(e: Event) => {
-          const target = e.target as HTMLTextAreaElement;
-          this.code = target.value;
-        }}
-      ></textarea>
-      <br />
+      <div id="editor"></div>
       <button @click=${this.evaluateCode}>Evaluate</button>
       ${this.result
         ? html`<div class="result"><strong>Result:</strong> ${this.result}</div>`
