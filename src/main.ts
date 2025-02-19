@@ -10,7 +10,7 @@ import './z-group-demo.js';
 import './lisp-demo.js';
 import './even-group-demo.js';
 import './triangle-group-demo.ts';
-import './half-adder.ts'; // New half-adder demo
+import './adder-demo.js'; // Updated import for the adder demo
 
 import { LitElement, html, css } from 'lit';
 
@@ -97,8 +97,8 @@ class MyApp extends LitElement {
             <sl-menu-item @click=${() => this.handleMenuClick('lisp')}>
               Lisp Demo
             </sl-menu-item>
-            <sl-menu-item @click=${() => this.handleMenuClick('half-adder')}>
-              Half-Adder Demo
+            <sl-menu-item @click=${() => this.handleMenuClick('adder-demo')}>
+              Adder Demo
             </sl-menu-item>
           </sl-menu>
         </sl-dropdown>
@@ -112,8 +112,8 @@ class MyApp extends LitElement {
               ? html`<triangle-group-demo></triangle-group-demo>`
               : this.activeView === 'lisp'
                 ? html`<lisp-demo></lisp-demo>`
-                : this.activeView === 'half-adder'
-                  ? html`<half-adder-demo></half-adder-demo>`
+                : this.activeView === 'adder-demo'
+                  ? html`<adder-demo></adder-demo>`
                   : html`<p>Welcome to the Museum of Mathematics. Please select an exhibit from the menu above.</p>`
         }
       </main>

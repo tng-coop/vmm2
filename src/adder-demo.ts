@@ -49,15 +49,19 @@ const keywordHighlighter = ViewPlugin.fromClass(class {
   }
 }, { decorations: v => v.decorations });
 
-@customElement('half-adder-demo')
-export class HalfAdderDemo extends LitElement {
+@customElement('adder-demo')
+export class AdderDemo extends LitElement {
   @property({ type: String })
   result: string = '';
 
   @property({ type: String })
   error: string = '';
 
-  // Hidden code: defines our custom logical and (via an alias) and xor for numbers.
+  // Tracks the current demo type.
+  @property({ type: String })
+  demoType: string = 'half-adder';
+
+  // Hidden code: defines our custom logical and, xor, and or for numbers.
   private hiddenCode: string = `(define (my-and a b)
   (if (and (= a 1) (= b 1))
       1
@@ -66,15 +70,56 @@ export class HalfAdderDemo extends LitElement {
 (define (xor a b)
   (if (= (+ a b) 1)
       1
-      0))`;
+      0))
+(define (my-or a b)
+  (if (and (= a 0) (= b 0))
+      0
+      1))
+(define or my-or)`;
 
-  // Visible code: uses and and xor to compute the half-adder.
-  code: string = `(define (half-adder a b)
+  // Demo templates for different types of adders.
+  private demoTemplates: Record<string, { name: string, code: string }> = {
+    'half-adder': {
+      name: 'Half-Adder Demo',
+      code: `(define (half-adder a b)
   (cons (and a b) (xor a b)))
 
 ; Test the half-adder with inputs: 1 and 0
 (half-adder 1 0)
-`;
+`
+    },
+    'full-adder': {
+      name: 'Full-Adder Demo',
+      code: `(define (full-adder a b c)
+  (let ((sum (xor (xor a b) c))
+        (carry (or (and a b) (and (xor a b) c))))
+    (cons carry sum)))
+
+; Test the full adder with inputs: 1, 1, 0
+(full-adder 1 1 0)
+`
+    },
+    'chained-full-adder': {
+      name: 'Chained Full-Adder Demo',
+      code: `(define (full-adder a b c)
+  (let ((sum (xor (xor a b) c))
+        (carry (or (and a b) (and (xor a b) c))))
+    (cons carry sum)))
+
+; Chaining two full adders for two-bit addition
+(let* ((fa1 (full-adder 1 0 0)) ; first bit addition, carry in 0
+       (carry1 (car fa1))
+       (sum1 (cdr fa1))
+       (fa2 (full-adder 1 1 carry1))
+       (carry2 (car fa2))
+       (sum2 (cdr fa2)))
+  (list carry2 sum2 sum1))
+`
+    }
+  };
+
+  // The code that is shown in the editor.
+  code: string = this.demoTemplates[this.demoType].code;
 
   private editorView?: EditorView;
 
@@ -104,6 +149,11 @@ export class HalfAdderDemo extends LitElement {
       border: none;
       border-radius: 4px;
       cursor: pointer;
+    }
+    select {
+      margin-bottom: 10px;
+      padding: 5px;
+      font-size: 16px;
     }
     .result,
     .error {
@@ -146,12 +196,29 @@ export class HalfAdderDemo extends LitElement {
     }
   }
 
+  // Called when the user selects a different demo.
+  handleDemoTypeChange(e: Event): void {
+    const select = e.target as HTMLSelectElement;
+    this.demoType = select.value;
+    // Update the code in the editor with the template for the selected demo.
+    const newCode = this.demoTemplates[this.demoType].code;
+    this.code = newCode;
+    if (this.editorView) {
+      this.editorView.dispatch({
+        changes: { from: 0, to: this.editorView.state.doc.length, insert: newCode }
+      });
+    }
+    // Clear previous results/errors.
+    this.result = '';
+    this.error = '';
+  }
+
   evaluateCode(): void {
     this.result = '';
     this.error = '';
     if (this.editorView) {
       const userCode = this.editorView.state.doc.toString();
-      // Prepend the hidden definitions for and and xor.
+      // Prepend the hidden definitions for and, xor, and or.
       const fullCode = `${this.hiddenCode}\n${userCode}`;
       const interpreter = new BiwaScheme.Interpreter();
       try {
@@ -167,11 +234,17 @@ export class HalfAdderDemo extends LitElement {
 
   render() {
     return html`
-      <h2>Half-Adder Demo</h2>
+      <h2>${this.demoTemplates[this.demoType].name}</h2>
       <p>
-        The definitions for <strong>and</strong> and <strong>xor</strong> are hidden.
-        Edit the half-adder code below and click "Evaluate" to simulate a half-adder using 0 and 1.
+        The definitions for <strong>and</strong>, <strong>xor</strong>, and <strong>or</strong> are hidden.
+        Edit the code below and click "Evaluate" to simulate the selected adder.
       </p>
+      <label for="demo-select">Select Demo:</label>
+      <select id="demo-select" @change=${this.handleDemoTypeChange}>
+        <option value="half-adder" ?selected=${this.demoType === 'half-adder'}>Half Adder</option>
+        <option value="full-adder" ?selected=${this.demoType === 'full-adder'}>Full Adder</option>
+        <option value="chained-full-adder" ?selected=${this.demoType === 'chained-full-adder'}>Chained Full Adder</option>
+      </select>
       <div id="editor"></div>
       <br />
       <button @click=${this.evaluateCode}>Evaluate</button>
